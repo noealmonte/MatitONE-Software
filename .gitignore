@@ -1,0 +1,25 @@
+# Ignorer les dossiers d'environnement virtuel
+.venv/
+.env/
+
+# Ignorer les fichiers Python compilés
+*.pyc
+*.pyo
+__pycache__/
+
+# Ignorer les fichiers de log
+*.log
+
+# Ignorer les dossiers générés par des outils comme pytest ou coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Ignorer les métadonnées des paquets Python
+*.egg-info/
+dist/
+build/
+
+# Ignorer des outils spécifiques (ex. IDEs)
+.vscode/
+.idea/
