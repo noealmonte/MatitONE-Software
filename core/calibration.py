@@ -14,10 +14,12 @@ class Calibration:
         self.real_height = real_height
         self.pixel_points = []  # Points calibrés en pixels
         self.real_points = []   # Points calibrés en unités réelles (cm)
+        self.cross_size = 50  # Taille des croix
 
     def show_gui(self):
         """
-        Affiche la GUI avec 4 croix noires aux coins sur un fond blanc.
+        Affiche la GUI avec 4 croix noires aux coins sur un fond blanc, 
+        ajustée dynamiquement à la taille de la fenêtre.
         """
         ctk.set_appearance_mode("light")  # Mode clair
         ctk.set_default_color_theme("blue")  # Thème par défaut
@@ -27,29 +29,37 @@ class Calibration:
         self.root.geometry("800x600")
 
         # Canvas pour dessiner
-        self.canvas = ctk.CTkCanvas(self.root, width=800, height=600, bg="white")
-        self.canvas.pack()
+        self.canvas = ctk.CTkCanvas(self.root, bg="white")
+        self.canvas.pack(fill="both", expand=True)
 
-        # Taille de l'écran en pixels
-        screen_width = 800  # À ajuster si nécessaire
-        screen_height = 600
+        # Redéfinir les croix lors du redimensionnement
+        self.root.bind("<Configure>", self._update_cross_positions)
 
-        # Positions des croix
-        cross_size = 10
+        self.root.mainloop()
+
+    def _update_cross_positions(self, event):
+        """
+        Met à jour les positions des croix sur le Canvas en fonction de la taille actuelle de la fenêtre.
+        """
+        self.canvas.delete("all")  # Supprime toutes les croix actuelles
+
+        # Taille actuelle de la fenêtre
+        screen_width = self.canvas.winfo_width()
+        screen_height = self.canvas.winfo_height()
+
+        deltaPos = 100 # Marge de 100 pixels
+        # Positions des croix aux coins
         self.cross_positions = [
-            (20, 20),  # Coin haut-gauche
-            (screen_width - 20, 20),  # Coin haut-droit
-            (20, screen_height - 20),  # Coin bas-gauche
-            (screen_width - 20, screen_height - 20),  # Coin bas-droit
+            (deltaPos, deltaPos),  # Coin haut-gauche
+            (screen_width - deltaPos, deltaPos),  # Coin haut-droit
+            (deltaPos, screen_height - deltaPos),  # Coin bas-gauche
+            (screen_width - deltaPos, screen_height - deltaPos)  # Coin bas-droit
         ]
 
         # Dessine les croix noires
         for x, y in self.cross_positions:
-            self.canvas.create_line(x - cross_size, y, x + cross_size, y, fill="black", width=2)
-            self.canvas.create_line(x, y - cross_size, x, y + cross_size, fill="black", width=2)
-
-        self.root.after(100, self.calibrate)  # Démarre la calibration
-        self.root.mainloop()
+            self.canvas.create_line(x - self.cross_size, y, x + self.cross_size, y, fill="black", width=6)
+            self.canvas.create_line(x, y - self.cross_size, x, y + self.cross_size, fill="black", width=6)
 
     def calibrate(self):
         """
@@ -74,7 +84,8 @@ class Calibration:
         start_time = time.time()
         while True:
             frame = self.tracking.camera.get_frame()
-            tracked_position = self.tracking._track_red(frame)  # Remplacez par le filtre actif
+           # tracked_position = self.tracking._track_red(frame)  # Remplacez par le filtre actif
+            tracked_position = self.tracking.start_tracking(filter_type="yellow")
             if not tracked_position:
                 continue
 

@@ -3,7 +3,7 @@ from core.tracking import Tracking
 from core.calibration import Calibration
 import cv2
 
-
+    
 def main():
     # Initialisation de la caméra
     camera = Camera()
@@ -14,13 +14,13 @@ def main():
     try:
         # Démarrage de la caméra
         camera.connect_to_webcam(0)  # Exemple : la première webcam
-
         print("La caméra fonctionne correctement.")
 
         # Affichage d'une frame en direct
         while True:
-          #  tracker.start_tracking(filter_type="red")  # Exemple avec le filtre jaune
+           # tracker.start_tracking(filter_type="yellow")  # Exemple avec le filtre jaune
             calibration.show_gui()
+            calibration.calibrate()
          
             # Quitte la boucle si l'utilisateur appuie sur la touche 'q'
             if cv2.waitKey(1) & 0xFF == ord('q'):

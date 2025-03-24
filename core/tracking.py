@@ -38,6 +38,7 @@ class Tracking:
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 self.stop_tracking()
         
+        return tracked_frame
         cv2.destroyAllWindows()
 
     def stop_tracking(self):
