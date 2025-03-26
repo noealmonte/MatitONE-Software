@@ -1,51 +1,37 @@
 import cv2
+import threading
+import queue
 
 class Camera:
-    def __init__(self):
-        self.cap = None  # Objet pour gérer la capture vidéo
-        self.available_cams = []  # Liste des webcams disponibles
+    def __init__(self, source=0):
+        self.capture = cv2.VideoCapture(source)
+        self.frame_queue = queue.Queue(maxsize=1)  # Stocke la dernière image
+        self.running = threading.Event()
 
-    def list_webcams(self):
-        """Liste toutes les webcams connectées au PC."""
-        self.available_cams = []
-        for i in range(10):  # Test jusqu'à 10 webcams possibles
-            temp_cap = cv2.VideoCapture(i)
-            if temp_cap.isOpened():
-                self.available_cams.append(i)
-                temp_cap.release()
-        return self.available_cams
+    def start(self):
+        """Démarre la capture vidéo en continu sur un thread."""
+        self.running.set()
+        self.thread = threading.Thread(target=self._capture_loop, daemon=True)
+        self.thread.start()
+        print("Camera thread démarré.")
 
-    def connect_to_webcam(self, cam_index):
-        """Connecte à la webcam spécifiée par son index."""
-        if self.cap is not None:
-            self.cap.release()
-        self.cap = cv2.VideoCapture(cam_index)
-        if not self.cap.isOpened():
-            raise ValueError(f"Impossible de se connecter à la webcam {cam_index}")
+    def _capture_loop(self):
+        while self.running.is_set():
+            ret, frame = self.capture.read()
+            if ret:
+                if not self.frame_queue.empty():
+                    self.frame_queue.get_nowait()  # Supprime l’ancienne image
+                self.frame_queue.put(frame)
+        #print("Arrêt de la capture vidéo.")
+
 
     def get_frame(self):
-        """Récupère une image du flux vidéo."""
-        if self.cap is None or not self.cap.isOpened():
-            raise RuntimeError("Aucune webcam connectée.")
-        ret, frame = self.cap.read()
-        if not ret:
-            raise RuntimeError("Impossible de lire le flux vidéo.")
-        return frame
+        """Récupère la dernière image capturée."""
+        return self.frame_queue.get() if not self.frame_queue.empty() else None
 
-    def show_live_feed(self):
-        """Affiche le flux vidéo en direct (pour tester)."""
-        if self.cap is None or not self.cap.isOpened():
-            raise RuntimeError("Aucune webcam connectée.")
-        while True:
-            frame = self.get_frame()
-            cv2.imshow("Webcam Live Feed", frame)
-            if cv2.waitKey(1) & 0xFF == ord('q'):  # Quitte avec la touche 'q'
-                break
-        self.cap.release()
-        cv2.destroyAllWindows()
-
-    def release_webcam(self):
-        """Libère la webcam."""
-        if self.cap is not None:
-            self.cap.release()
-            self.cap = None
+    def stop(self):
+        """Arrête la capture vidéo proprement."""
+        self.running.clear()
+        self.thread.join()
+        self.capture.release()
+        print("Camera thread arrêté.")
