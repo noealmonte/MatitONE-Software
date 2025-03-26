@@ -1,37 +1,37 @@
 import cv2
 import threading
-import queue
 
-class Camera:
-    def __init__(self, source=0):
-        self.capture = cv2.VideoCapture(source)
-        self.frame_queue = queue.Queue(maxsize=1)  # Stocke la dernière image
-        self.running = threading.Event()
+class CameraManager:
+    def __init__(self, camera_index=0):
+        self.camera_index = camera_index
+        self.cap = None
+        self.running = False
+        self.frame = None
+        self.thread = None
 
-    def start(self):
-        """Démarre la capture vidéo en continu sur un thread."""
-        self.running.set()
+    def start_camera(self):
+        """Démarre la capture vidéo en arrière-plan"""
+        if self.running:
+            return  
+        self.running = True
+        self.cap = cv2.VideoCapture(self.camera_index)
         self.thread = threading.Thread(target=self._capture_loop, daemon=True)
         self.thread.start()
-        print("Camera thread démarré.")
 
     def _capture_loop(self):
-        while self.running.is_set():
-            ret, frame = self.capture.read()
+        """Boucle de capture vidéo"""
+        while self.running:
+            ret, frame = self.cap.read()
             if ret:
-                if not self.frame_queue.empty():
-                    self.frame_queue.get_nowait()  # Supprime l’ancienne image
-                self.frame_queue.put(frame)
-        #print("Arrêt de la capture vidéo.")
-
+                self.frame = frame  
 
     def get_frame(self):
-        """Récupère la dernière image capturée."""
-        return self.frame_queue.get() if not self.frame_queue.empty() else None
+        """Retourne la dernière image capturée"""
+        return self.frame
 
-    def stop(self):
-        """Arrête la capture vidéo proprement."""
-        self.running.clear()
-        self.thread.join()
-        self.capture.release()
-        print("Camera thread arrêté.")
+    def stop_camera(self):
+        """Arrête la caméra proprement"""
+        self.running = False
+        if self.cap:
+            self.cap.release()
+        self.cap = None

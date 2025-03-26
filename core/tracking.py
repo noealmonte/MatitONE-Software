@@ -1,36 +1,127 @@
+import cv2
+import numpy as np
 import threading
-import time
 
-class Tracking:
-    def __init__(self, camera):
-        self.camera = camera
-        self.running = threading.Event()
-        self.position = None  # Stocke la dernière position détectée
+class TrackingManager:
+    def __init__(self, camera_manager, color_mode="IR"):
+        """
+        Initialise le tracking avec une caméra et un mode de couleur.
+        color_mode : "IR" ou "JAUNE"
+        """
+        self.camera_manager = camera_manager
+        self.running = False
+        self.thread = None
+        self.last_position = None
+        self.color_mode = color_mode  # Mode de couleur sélectionné
+        # Thread pour le mode debug en parallèle (affichage en temps réel)
+        self.debug_running = False
+        self.debug_thread = None
 
-    def start(self):
-        """Démarre le tracking sur un thread séparé."""
-        self.running.set()
+    def start_tracking(self):
+        """Lance le tracking en arrière-plan"""
+        if self.running:
+            return
+        self.running = True
         self.thread = threading.Thread(target=self._tracking_loop, daemon=True)
         self.thread.start()
-        print("Tracking thread démarré.")
 
     def _tracking_loop(self):
-        while self.running.is_set():
-            frame = self.camera.get_frame()
+        """Boucle qui récupère les frames et détecte l’objet"""
+        while self.running:
+            frame = self.camera_manager.get_frame()
             if frame is not None:
-                self.position = self._process_frame(frame)
-            time.sleep(0.01)  # Petit délai pour éviter d'utiliser 100% du CPU
+                self.last_position = self._process_frame(frame)
 
     def _process_frame(self, frame):
-        """Simule la détection de la LED IR (à implémenter avec OpenCV)."""
+        """Traitement pour détecter l’objet en fonction de la couleur sélectionnée"""
+        if self.color_mode == "IR":
+            return self._track_ir(frame)
+        elif self.color_mode == "JAUNE":
+            return self._track_yellow(frame)
+        return None
 
-        return (100, 200)  # Exemple de coordonnées
+    def _track_ir(self, frame):
+        """Détection de la LED IR en binarisant l’image"""
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        _, thresh = cv2.threshold(gray, 200, 255, cv2.THRESH_BINARY)
+        return self._find_largest_contour(thresh)
+
+    def _track_yellow(self, frame):
+        """Détection d’un objet jaune avec filtrage HSV"""
+        hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+        lower_yellow = np.array([20, 100, 100])
+        upper_yellow = np.array([30, 255, 255])
+        mask = cv2.inRange(hsv, lower_yellow, upper_yellow)
+        return self._find_largest_contour(mask)
+
+    def _find_largest_contour(self, binary_mask):
+        """Trouve le plus grand contour et renvoie ses coordonnées"""
+        contours, _ = cv2.findContours(binary_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        if contours:
+            biggest = max(contours, key=cv2.contourArea)
+            x, y, w, h = cv2.boundingRect(biggest)
+            return (x, y, w, h)
+        return None
 
     def get_position(self):
-        return self.position
+        """Retourne la dernière position détectée"""
+        return self.last_position
 
-    def stop(self):
-        """Arrête le tracking proprement."""
-        self.running.clear()
-        self.thread.join()
-        print("Tracking thread arrêté.")
+    def stop_tracking(self):
+        """Arrête le tracking"""
+        self.running = False
+
+    def set_color_mode(self, color_mode):
+        """Change dynamiquement la couleur à suivre"""
+        if color_mode in ["IR", "JAUNE"]:
+            self.color_mode = color_mode
+            print(f"Mode de tracking changé en : {color_mode}")
+        else:
+            print("Mode invalide ! Choisissez 'IR' ou 'JAUNE'.")
+
+    def debug_display(self):
+        """Affiche le tracking en direct avec un cadre autour de l’objet détecté"""
+        while True:
+            frame = self.camera_manager.get_frame()
+            if frame is not None:
+                display_frame = frame.copy()
+                if self.last_position:
+                    x, y, w, h = self.last_position
+                    cv2.rectangle(display_frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+                cv2.putText(display_frame, f"Mode: {self.color_mode}", (10, 30), 
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+                cv2.imshow("Debug Tracking", display_frame)
+
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
+
+        cv2.destroyAllWindows()
+    # def debug_display(self):
+    #     """Affiche le tracking en parallèle, sans bloquer le programme"""
+    #     if self.debug_running:
+    #         return
+    #     self.debug_running = True
+    #     self.debug_thread = threading.Thread(target=self._debug_loop, daemon=True)
+    #     self.debug_thread.start()
+
+    # def _debug_loop(self):
+    #     """Boucle pour afficher le tracking sans bloquer le programme"""
+    #     while self.debug_running:
+    #         frame = self.camera_manager.get_frame()
+    #         if frame is not None:
+    #             display_frame = frame.copy()
+    #             if self.last_position:
+    #                 x, y, w, h = self.last_position
+    #                 cv2.rectangle(display_frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+    #             cv2.putText(display_frame, f"Mode: {self.color_mode}", (10, 30), 
+    #                         cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+    #             cv2.imshow("Debug Tracking", display_frame)
+
+    #         if cv2.waitKey(1) & 0xFF == ord('q'):
+    #             self.debug_running = False  # Arrêter le debug
+
+    #     cv2.destroyAllWindows()
+
+    def stop_debug(self):
+        """Arrête le debug proprement"""
+        self.debug_running = False
