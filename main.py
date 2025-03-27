@@ -9,7 +9,8 @@ calibration = Calibration(tracking)
 camera.start_camera()
 tracking.start_tracking()
 tracking.debug_display()
-calibration.start_calibration()
+#calibration.start_calibration()
+calibration._ui_thread_func()
 
 
 # Mode debug pour voir l'affichage en temps réel
