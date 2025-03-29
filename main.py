@@ -1,18 +1,20 @@
-from core.camera import CameraManager
-from core.tracking import TrackingManager
-from core.calibration import Calibration
+import time
+from core.control import Control 
+from gui.gui import MainGUI
+import threading
 
-camera = CameraManager()
-tracking = TrackingManager(camera, color_mode="JAUNE")
-calibration = Calibration(tracking)
+def main():
+    # Logique principale
+    print("Démarrage de l'application...")
+    # Création des instances de GUI et de Control
+    control_app = Control()
+    app = MainGUI()
 
-camera.start_camera()
-tracking.start_tracking()
-tracking.debug_display()
-#calibration.start_calibration()
-calibration._ui_thread_func()
+    control_thread = threading.Thread(target=control_app.start_control, daemon=True)
+    control_thread.start()         
+    app.run()
 
+    #control_app.stop_control()
 
-# Mode debug pour voir l'affichage en temps réel
-
-print("Fin du programme")
+if __name__ == "__main__":
+    main()

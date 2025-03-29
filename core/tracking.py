@@ -1,14 +1,18 @@
 import cv2
 import numpy as np
 import threading
+from core.camera import CameraManager
+#from camera import CameraManager # When using the camera module directly
 
 class TrackingManager:
-    def __init__(self, camera_manager, color_mode="IR"):
+    def __init__(self,camera_index=0, color_mode="IR"):
         """
         Initialise le tracking avec une caméra et un mode de couleur.
         color_mode : "IR" ou "JAUNE"
         """
-        self.camera_manager = camera_manager
+        # self.camera_manager = camera_manager
+        self.camera_manager = CameraManager(camera_index)  # Créer une instance de CameraManager
+        self.camera_manager.start_camera()
         self.running = False
         self.thread = None
         self.last_position = None
@@ -31,6 +35,7 @@ class TrackingManager:
             frame = self.camera_manager.get_frame()
             if frame is not None:
                 self.last_position = self._process_frame(frame)
+                print(f"Last position: {self.last_position}")
 
     def _process_frame(self, frame):
         """Traitement pour détecter l’objet en fonction de la couleur sélectionnée"""
@@ -53,6 +58,7 @@ class TrackingManager:
         upper_yellow = np.array([30, 255, 255])
         mask = cv2.inRange(hsv, lower_yellow, upper_yellow)
         return self._find_largest_contour(mask)
+        
 
     def _find_largest_contour(self, binary_mask):
         """Trouve le plus grand contour et renvoie ses coordonnées"""
@@ -69,6 +75,7 @@ class TrackingManager:
 
     def stop_tracking(self):
         """Arrête le tracking"""
+        self.camera_manager.stop_camera()
         self.running = False
 
     def set_color_mode(self, color_mode):
