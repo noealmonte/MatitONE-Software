@@ -1,8 +1,8 @@
 import cv2
 import numpy as np
 import threading
-from core.camera import CameraManager
-#from camera import CameraManager # When using the camera module directly
+#from core.camera import CameraManager
+from camera import CameraManager # When using the camera module directly
 
 class TrackingManager:
     def __init__(self,camera_index=0, color_mode="IR"):
@@ -35,21 +35,27 @@ class TrackingManager:
             frame = self.camera_manager.get_frame()
             if frame is not None:
                 self.last_position = self._process_frame(frame)
-                print(f"Last position: {self.last_position}")
+               # print(f"Last position: {self.last_position}")
 
     def _process_frame(self, frame):
         """Traitement pour détecter l’objet en fonction de la couleur sélectionnée"""
-        if self.color_mode == "IR":
-            return self._track_ir(frame)
-        elif self.color_mode == "JAUNE":
+        if self.color_mode == "JAUNE":
             return self._track_yellow(frame)
+           # return self._track_yellow_with_mask(frame)
+        else:
+            print("Erreur : Mode de couleur non pris en charge.")
         return None
+    
+    # def _track_yellow_with_mask(self, frame):
+    #     """Détection d’un objet jaune avec filtrage HSV et masque appliqué"""
+    #     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+    #     lower_yellow = np.array([20, 100, 100])
+    #     upper_yellow = np.array([30, 255, 255])
+    #     mask = cv2.inRange(hsv, lower_yellow, upper_yellow)
+    #     result = cv2.bitwise_and(frame, frame, mask=mask)
 
-    def _track_ir(self, frame):
-        """Détection de la LED IR en binarisant l’image"""
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        _, thresh = cv2.threshold(gray, 200, 255, cv2.THRESH_BINARY)
-        return self._find_largest_contour(thresh)
+    #     position = self._find_largest_contour(mask)
+    #     return result, position
 
     def _track_yellow(self, frame):
         """Détection d’un objet jaune avec filtrage HSV"""
@@ -78,13 +84,6 @@ class TrackingManager:
         self.camera_manager.stop_camera()
         self.running = False
 
-    def set_color_mode(self, color_mode):
-        """Change dynamiquement la couleur à suivre"""
-        if color_mode in ["IR", "JAUNE"]:
-            self.color_mode = color_mode
-            print(f"Mode de tracking changé en : {color_mode}")
-        else:
-            print("Mode invalide ! Choisissez 'IR' ou 'JAUNE'.")
 
     def debug_display(self):
         """Affiche le tracking en direct avec un cadre autour de l’objet détecté"""
@@ -101,34 +100,8 @@ class TrackingManager:
 
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
-
         cv2.destroyAllWindows()
-    # def debug_display(self):
-    #     """Affiche le tracking en parallèle, sans bloquer le programme"""
-    #     if self.debug_running:
-    #         return
-    #     self.debug_running = True
-    #     self.debug_thread = threading.Thread(target=self._debug_loop, daemon=True)
-    #     self.debug_thread.start()
-
-    # def _debug_loop(self):
-    #     """Boucle pour afficher le tracking sans bloquer le programme"""
-    #     while self.debug_running:
-    #         frame = self.camera_manager.get_frame()
-    #         if frame is not None:
-    #             display_frame = frame.copy()
-    #             if self.last_position:
-    #                 x, y, w, h = self.last_position
-    #                 cv2.rectangle(display_frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-    #             cv2.putText(display_frame, f"Mode: {self.color_mode}", (10, 30), 
-    #                         cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
-    #             cv2.imshow("Debug Tracking", display_frame)
-
-    #         if cv2.waitKey(1) & 0xFF == ord('q'):
-    #             self.debug_running = False  # Arrêter le debug
-
-    #     cv2.destroyAllWindows()
-
+    
     def stop_debug(self):
         """Arrête le debug proprement"""
         self.debug_running = False
