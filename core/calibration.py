@@ -1,183 +1,107 @@
-import tkinter as tk
+import cv2
+import numpy as np
 import threading
 import time
-import math
-import json
-import os
+from tracking import TrackingManager
 
 class Calibration:
-    def __init__(self, tracking_manager, real_width=100, real_height=100):
+    def __init__(self, tracking_manager, real_points=None):
         """
-        Initialise la calibration avec un gestionnaire de tracking.
+        Initialise la calibration avec le gestionnaire de tracking et les points réels de calibration.
         
         Args:
-            tracking_manager: Instance de TrackingManager pour suivre l'objet
-            real_width: Largeur réelle en millimètres entre les croix (par défaut 100mm)
-            real_height: Hauteur réelle en millimètres entre les croix (par défaut 100mm)
+            tracking_manager (TrackingManager): Instance du gestionnaire de tracking.
+            real_points (list): Liste des points réels correspondants aux points de calibration dans l'image.
         """
         self.tracking_manager = tracking_manager
-        self.real_width = real_width
-        self.real_height = real_height
-        
-        self.calibration_points = []
-        self.current_point_idx = 0
-        self.total_points = 4
-        self.scale_factor = None
+        self.real_points = real_points if real_points else [(0, 0), (100, 0), (100, 100), (0, 100)]  # Points en mm
+        self.image_points = []  # Points collectés via le tracking
+        self.homography_matrix = None  # Matrice d'homographie
         self.calibration_complete = False
+        self.collecting_points = True
+        self.lock = threading.Lock()
         
-        self.stability_duration = 1.0 # Durée de stabilité requise en secondes
-        self.stability_threshold = 5
-        
-        self.root = None
-        self.canvas = None
-        self.calibration_thread = None
-
-    def start_calibration(self):
-        """Démarre le processus de calibration."""
-        self.calibration_points = []
-        self.current_point_idx = 0
-        self.calibration_complete = False
-        
-        if not self.tracking_manager.running:
-            self.tracking_manager.start_tracking()
-        
+        # On démarre le thread de calibration
         self.calibration_thread = threading.Thread(target=self._calibration_loop, daemon=True)
         self.calibration_thread.start()
-        
-        self._show_ui()
-
-    def _show_ui(self):
-        """Affiche une interface graphique simple avec 4 croix."""
-        self.root = tk.Tk()
-        self.root.title("Calibration")
-        self.root.geometry("800x600")
-        
-        self.canvas = tk.Canvas(self.root, width=800, height=600, bg="white")
-        self.canvas.pack(fill="both", expand=True)
-        
-        self._draw_crosses()
-        
-        self.root.protocol("WM_DELETE_WINDOW", self.stop_calibration)
-        self.root.mainloop()
-
-    def _draw_crosses(self):
-        """Dessine les 4 croix sur le canvas."""
-        positions = [
-            (100, 100),  # Haut gauche
-            (700, 100),  # Haut droite
-            (700, 500),  # Bas droite
-            (100, 500)   # Bas gauche
-        ]
-        
-        for i, (x, y) in enumerate(positions):
-            color = "red" if i == self.current_point_idx else "black"
-            self.canvas.create_line(x - 10, y, x + 10, y, fill=color, width=2)
-            self.canvas.create_line(x, y - 10, x, y + 10, fill=color, width=2)
 
     def _calibration_loop(self):
-        """Boucle principale pour détecter les points stables."""
-        positions = [
-            (100, 100),  # Haut gauche
-            (700, 100),  # Haut droite
-            (700, 500),  # Bas droite
-            (100, 500)   # Bas gauche
-        ]
-        print("je suis dans la boucle de calibration")
-        while self.current_point_idx < self.total_points:
-            ref_x, ref_y = positions[self.current_point_idx]
-            if self._check_stability_at((ref_x, ref_y)):
-                self.current_point_idx += 1
-                self._update_ui()
-        
-        self._calculate_scale()
-        self.calibration_complete = True
-        print("Calibration terminée!")
-
-    def _check_stability_at(self, reference_point):
-        """Vérifie si l'objet reste stable à proximité d'un point de référence."""
-        start_time = None
-        ref_x, ref_y = reference_point
-      
-        while True:
+        """Boucle pour collecter les points de calibration et calculer l'homographie."""
+        while self.collecting_points:
+            # On récupère la position de l'objet via le tracking manager
             position = self.tracking_manager.get_position()
             if position:
                 x, y, w, h = position
+                # Calculer le centre de l'objet
                 center_x = x + w // 2
                 center_y = y + h // 2
-                print("Coordonnées à atteindre:", ref_x, ref_y)
-                print("Coordonnées détectées:", center_x, center_y)
-                time.sleep(0.5)
-                distance = math.sqrt((center_x - ref_x)**2 + (center_y - ref_y)**2)
-                if distance < 500: # Sensibilité de 500 pixels d'écalage
-                    if start_time is None:
-                        start_time = time.time()
-                    elif time.time() - start_time >= self.stability_duration:
-                        self.calibration_points.append((center_x, center_y))
-                        return True
-                else:
-                    start_time = None
+                self._collect_point((center_x, center_y))
             time.sleep(0.1)
 
-    def _update_ui(self):
-        """Met à jour l'interface graphique pour refléter l'état actuel."""
-        if self.root and self.canvas:
-            self.canvas.delete("all")
-            self._draw_crosses()
+    def _collect_point(self, detected_point):
+        """Collecte un point et l'ajoute à la liste des points collectés."""
+        with self.lock:
+            if len(self.image_points) < len(self.real_points):
+                self.image_points.append(detected_point)
+                print(f"Point collecté : {detected_point}, Points collectés : {len(self.image_points)}")
+            
+            # Si on a collecté tous les points, on effectue la calibration
+            if len(self.image_points) == len(self.real_points):
+                self._calculate_homography()
+    
+    def _calculate_homography(self):
+        """Calcule la matrice d'homographie à partir des points collectés."""
+        if len(self.image_points) == len(self.real_points):
+            print("Calcul de l'homographie en cours...")
+            # Conversion des points en numpy arrays pour OpenCV
+            image_pts = np.array(self.image_points, dtype=np.float32)
+            real_pts = np.array(self.real_points, dtype=np.float32)
+            
+            # Calcul de la matrice d'homographie
+            self.homography_matrix, _ = cv2.findHomography(image_pts, real_pts)
+            self.calibration_complete = True
+            print("Calibration terminée!")
 
-    def _calculate_scale(self):
-        """Calcule le facteur d'échelle basé sur les points collectés."""
-        if len(self.calibration_points) != 4:
-            print("Erreur: Nombre de points de calibration incorrect")
-            return
-        
-        width_px = abs(self.calibration_points[1][0] - self.calibration_points[0][0])
-        height_px = abs(self.calibration_points[3][1] - self.calibration_points[0][1])
-        
-        scale_x = width_px / self.real_width
-        scale_y = height_px / self.real_height
-        self.scale_factor = (scale_x + scale_y) / 2
-        
-        calibration_data = {
-            'scale_factor': self.scale_factor,
-            'calibration_points': self.calibration_points,
-            'real_width_mm': self.real_width,
-            'real_height_mm': self.real_height,
-            'calibration_date': time.strftime('%Y-%m-%d %H:%M:%S')
-        }
-        
-        os.makedirs('config', exist_ok=True)
-        with open('config/calibration.json', 'w') as f:
-            json.dump(calibration_data, f, indent=4)
-        
-        print(f"Facteur d'échelle: {self.scale_factor:.4f} pixels/mm")
-
+    def apply_homography(self, point):
+        """Applique la matrice d'homographie à un point donné."""
+        if self.homography_matrix is not None:
+            point_array = np.array([point[0], point[1], 1.0], dtype=np.float32).reshape(3, 1)
+            transformed_point = np.dot(self.homography_matrix, point_array)
+            # Normaliser pour obtenir les coordonnées en 2D
+            transformed_point = transformed_point / transformed_point[2]
+            return transformed_point[0], transformed_point[1]
+        return None
+    
     def stop_calibration(self):
-        """Arrête la calibration et ferme l'interface graphique."""
-        if self.root:
-            self.root.destroy()
+        """Arrête la collecte de points et ferme le processus de calibration."""
+        self.collecting_points = False
+        print("Calibration arrêtée.")
 
-    def get_scale_factor(self):
-        """Renvoie le facteur d'échelle calculé."""
-        return self.scale_factor
+    def get_homography_matrix(self):
+        """Renvoie la matrice d'homographie calculée."""
+        return self.homography_matrix
+
+    def is_calibration_complete(self):
+        """Vérifie si la calibration est terminée."""
+        return self.calibration_complete
 
 if __name__ == "__main__":
-    
-    # from tracking import TrackingManager  # Remplacer par l'import correct
-    # control_app = TrackingManager()
-    # control_thread = threading.Thread(target=control_app.start_control, daemon=True)
-    # control_thread.start()  
-    # tracking_manager = TrackingManager(camera_index=0, color_mode="JAUNE")
-    # tracking_manager.start_tracking()
-    # tracking_manager.debug_display()
-    # calibration = Calibration(tracking_manager)
-    # calibration.start_calibration()
-    from tracking import TrackingManager  # Remplacer par l'import correct
+     # Initialisation du TrackingManager
     tracking_manager = TrackingManager(camera_index=0, color_mode="JAUNE")
-    track_thread = threading.Thread(target=tracking_manager.start_tracking, daemon=True)
-    display_thread = threading.Thread(target=tracking_manager.debug_display, daemon=True)
-    track_thread.start()
-    display_thread.start()
-    # tracking_manager.debug_display()
-    calibration = Calibration(tracking_manager)
-    calibration.start_calibration()
+    tracking_manager.start_tracking()
 
+    # Initialisation de la calibration
+    calibration = Calibration(tracking_manager)
+    
+    # Attendre la fin de la calibration
+    while not calibration.is_calibration_complete():
+        time.sleep(1)
+    
+    # Une fois la calibration terminée, obtenir la matrice d'homographie
+    homography_matrix = calibration.get_homography_matrix()
+    print("Matrice d'Homographie calculée:", homography_matrix)
+
+    # Appliquer l'homographie à un point détecté
+    point = (150, 200)  # Exemple de point à transformer
+    real_coords = calibration.apply_homography(point)
+    print(f"Point transformé : {real_coords}")

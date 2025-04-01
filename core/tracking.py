@@ -10,7 +10,6 @@ class TrackingManager:
         Initialise le tracking avec une caméra et un mode de couleur.
         color_mode : "IR" ou "JAUNE"
         """
-        # self.camera_manager = camera_manager
         self.camera_manager = CameraManager(camera_index)  # Créer une instance de CameraManager
         self.camera_manager.start_camera()
         self.running = False
@@ -36,12 +35,16 @@ class TrackingManager:
             if frame is not None:
                 self.last_position = self._process_frame(frame)
                # print(f"Last position: {self.last_position}")
+        # # stop le thread
+        # self.thread.join()
 
     def _process_frame(self, frame):
         """Traitement pour détecter l’objet en fonction de la couleur sélectionnée"""
         if self.color_mode == "JAUNE":
             return self._track_yellow(frame)
            # return self._track_yellow_with_mask(frame)
+        elif self.color_mode == "IR":
+            return self._track_white(frame)
         else:
             print("Erreur : Mode de couleur non pris en charge.")
         return None
@@ -64,6 +67,14 @@ class TrackingManager:
         upper_yellow = np.array([30, 255, 255])
         mask = cv2.inRange(hsv, lower_yellow, upper_yellow)
         return self._find_largest_contour(mask)
+    
+    def _track_white(self, frame):
+        """Détection d’un objet blanc avec filtrage HSV"""
+        hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+        lower_white = np.array([0, 0, 200])
+        upper_white = np.array([180, 25, 255])
+        mask = cv2.inRange(hsv, lower_white, upper_white)
+        return self._find_largest_contour(mask)
         
 
     def _find_largest_contour(self, binary_mask):
@@ -84,7 +95,6 @@ class TrackingManager:
         self.camera_manager.stop_camera()
         self.running = False
 
-
     def debug_display(self):
         """Affiche le tracking en direct avec un cadre autour de l’objet détecté"""
         while True:
@@ -101,27 +111,6 @@ class TrackingManager:
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
         cv2.destroyAllWindows()
-
-
-    # def debug_display(self):
-    #         """Affiche le tracking en direct avec un cadre autour de l’objet détecté"""
-    #         while True:
-    #             frame = self.camera_manager.get_frame()
-    #             if frame is not None:
-    #                 display_frame = frame.copy()
-    #                 if self.last_position:
-    #                     x, y, w, h = self.last_position
-    #                     cv2.rectangle(display_frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-    #                     cv2.putText(display_frame, f"Coords: ({x}, {y})", (x, y - 10), 
-    #                                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-    #                 cv2.putText(display_frame, f"Mode: {self.color_mode}", (10, 30), 
-    #                             cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
-    #                 cv2.imshow("Debug Tracking", display_frame)
-
-    #             if cv2.waitKey(1) & 0xFF == ord('q'):
-    #                 break
-    #         cv2.destroyAllWindows()
-
     
     def stop_debug(self):
         """Arrête le debug proprement"""

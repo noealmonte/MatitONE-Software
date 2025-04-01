@@ -35,3 +35,4 @@ class CameraManager:
         if self.cap:
             self.cap.release()
         self.cap = None
+        # arrêter le thread ? a revoir avec prof
