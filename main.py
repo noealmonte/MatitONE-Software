@@ -14,6 +14,14 @@ def main():
     control_thread.start()         
     app.run()
 
+#     app.sample_button.config(command=stop_control)
+
+
+# def stop_control():
+#     """Arrête le contrôle."""
+#     print("Arrêt du contrôle")
+
+
     #control_app.stop_control()
 
 if __name__ == "__main__":

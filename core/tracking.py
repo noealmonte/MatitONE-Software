@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 import threading
-#from core.camera import CameraManager
+# from core.camera import CameraManager
 from camera import CameraManager # When using the camera module directly
 
 class TrackingManager:
@@ -101,6 +101,27 @@ class TrackingManager:
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
         cv2.destroyAllWindows()
+
+
+    # def debug_display(self):
+    #         """Affiche le tracking en direct avec un cadre autour de l’objet détecté"""
+    #         while True:
+    #             frame = self.camera_manager.get_frame()
+    #             if frame is not None:
+    #                 display_frame = frame.copy()
+    #                 if self.last_position:
+    #                     x, y, w, h = self.last_position
+    #                     cv2.rectangle(display_frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+    #                     cv2.putText(display_frame, f"Coords: ({x}, {y})", (x, y - 10), 
+    #                                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+    #                 cv2.putText(display_frame, f"Mode: {self.color_mode}", (10, 30), 
+    #                             cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+    #                 cv2.imshow("Debug Tracking", display_frame)
+
+    #             if cv2.waitKey(1) & 0xFF == ord('q'):
+    #                 break
+    #         cv2.destroyAllWindows()
+
     
     def stop_debug(self):
         """Arrête le debug proprement"""
