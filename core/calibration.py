@@ -2,7 +2,8 @@ import cv2
 import numpy as np
 import threading
 import time
-from tracking import TrackingManager
+#from tracking import TrackingManager
+from core.tracking import TrackingManager
 
 class Calibration:
     def __init__(self, tracking_manager, real_points=None):

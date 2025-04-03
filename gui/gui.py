@@ -4,7 +4,9 @@ from typing import Any, Optional
 class MainGUI:
     """Main GUI application class built with CustomTkinter."""
     
-    def __init__(self):
+    def __init__(self, control_app, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.control_app = control_app  # Logic class instance (Control)
         # Initialize the main application window
         self.root = ctk.CTk()
         self.root.title("MatitONE Software")
@@ -54,6 +56,7 @@ class MainGUI:
     def sample_action(self):
         """Example method for button command."""
         print("Sample action triggered")
+        self.control_app.start_control()  # Call the control app method
         # Toggle connection status when button is pressed
         self.connection_status = not self.connection_status
     

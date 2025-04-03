@@ -8,10 +8,10 @@ def main():
     print("Démarrage de l'application...")
     # Création des instances de GUI et de Control
     control_app = Control()
-    app = MainGUI()
+    app = MainGUI(control_app)
 
-    control_thread = threading.Thread(target=control_app.start_control, daemon=True)
-    control_thread.start()         
+    # control_thread = threading.Thread(target=control_app.start_control, daemon=True)
+    # control_thread.start()         
     app.run()
 
 #     app.sample_button.config(command=stop_control)

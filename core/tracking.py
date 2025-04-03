@@ -1,8 +1,8 @@
 import cv2
 import numpy as np
 import threading
-# from core.camera import CameraManager
-from camera import CameraManager # When using the camera module directly
+from core.camera import CameraManager # When using the main.py file
+#from camera import CameraManager # When using the camera module directly
 
 class TrackingManager:
     def __init__(self,camera_index=0, color_mode="IR"):
@@ -49,17 +49,6 @@ class TrackingManager:
             print("Erreur : Mode de couleur non pris en charge.")
         return None
     
-    # def _track_yellow_with_mask(self, frame):
-    #     """Détection d’un objet jaune avec filtrage HSV et masque appliqué"""
-    #     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-    #     lower_yellow = np.array([20, 100, 100])
-    #     upper_yellow = np.array([30, 255, 255])
-    #     mask = cv2.inRange(hsv, lower_yellow, upper_yellow)
-    #     result = cv2.bitwise_and(frame, frame, mask=mask)
-
-    #     position = self._find_largest_contour(mask)
-    #     return result, position
-
     def _track_yellow(self, frame):
         """Détection d’un objet jaune avec filtrage HSV"""
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
@@ -76,7 +65,6 @@ class TrackingManager:
         mask = cv2.inRange(hsv, lower_white, upper_white)
         return self._find_largest_contour(mask)
         
-
     def _find_largest_contour(self, binary_mask):
         """Trouve le plus grand contour et renvoie ses coordonnées"""
         contours, _ = cv2.findContours(binary_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
