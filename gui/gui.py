@@ -39,12 +39,12 @@ class MainGUI:
         self.title_label.pack(pady=20)
         
         # Add a sample button
-        self.sample_button = ctk.CTkButton(
+        self.startbutton = ctk.CTkButton(
             self.main_frame,
-            text="Sample Action",
-            command=self.sample_action
+            text="start button",
+            command=self.startbutton_function,
         )
-        self.sample_button.pack(pady=10)
+        self.startbutton.pack(pady=10)
         
         # Status label to demonstrate property changes
         self.status_label = ctk.CTkLabel(
@@ -53,12 +53,16 @@ class MainGUI:
         )
         self.status_label.pack(pady=20)
     
-    def sample_action(self):
+    def startbutton_function(self):
         """Example method for button command."""
-        print("Sample action triggered")
+        print("start button pressed")
         self.control_app.start_control()  # Call the control app method
         # Toggle connection status when button is pressed
         self.connection_status = not self.connection_status
+    
+
+
+
     
     # Example getters and setters using properties
     
