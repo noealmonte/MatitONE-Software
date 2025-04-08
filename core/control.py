@@ -1,109 +1,73 @@
-import customtkinter as ctk
-from typing import Any
+import time
+import threading
+import pyautogui  # Pour bouger la souris
+from tracking import TrackingManager
+from testCalibrationHmgVideo import CalibrationManager
 
-# # from tracking import TrackingManager
-# from core.tracking import TrackingManager
-# from core.calibration import Calibration
-# #from tracking import TrackingManager # When using the control module directly
-# import time
+class Control:
+    def __init__(self):
+        self.tracking = None
+        self.calibration = None
+        self.running = False
 
+    def launch_tracking(self):
+        self.tracking = TrackingManager(camera_index=1, color_mode="IR")
+        self.tracking.start_tracking()
+        return self.tracking
 
-
-class MainGUI:
-    """Main GUI application class built with CustomTkinter."""
-
-    def __init__(self, control_app, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.control_app = control_app  # Logic class instance (Control)
-        self.root = ctk.CTk()
-        self.root.title("MatitONE Software")
-        self.root.geometry("800x600")
-
-        # Theme settings
-        ctk.set_appearance_mode("System")
-        ctk.set_default_color_theme("blue")
-
-        # Private attributes
-        self._current_mode = "Normal"
-        self._user_settings = {}
-        self._connection_status = False
-        self.is_running = False  # Ajout d'un état pour alterner entre start et stop
-
-        # Initialize UI components
-        self._init_ui()
-
-    def _init_ui(self):
-        """Initialize all UI components."""
-        self.main_frame = ctk.CTkFrame(self.root)
-        self.main_frame.pack(fill="both", expand=True, padx=10, pady=10)
-
-        self.title_label = ctk.CTkLabel(
-            self.main_frame,
-            text="MatitONE Software",
-            font=("Arial", 24)
-        )
-        self.title_label.pack(pady=20)
-
-        # Bouton Start/Stop
-        self.startbutton = ctk.CTkButton(
-            self.main_frame,
-            text="Start",
-            command=self.toggle_start_stop,
-        )
-        self.startbutton.pack(pady=10)
-
-        self.status_label = ctk.CTkLabel(
-            self.main_frame,
-            text=f"Mode: {self._current_mode} | Connected: {self._connection_status}"
-        )
-        self.status_label.pack(pady=20)
-
-    def toggle_start_stop(self):
-        """Alterner entre Start et Stop."""
-        if self.is_running:
-            # Appel de stop_calibration() et mise à jour de l'interface
-            print("Stopping calibration...")
-            if hasattr(self.control_app, "stop_calibration"):
-                self.control_app.stop_calibration()
-            else:
-                print("Warning: stop_calibration() method not found in control_app")
-
-            self.startbutton.configure(text="Start")
-        else:
-            # Appel de start_control() et mise à jour de l'interface
-            print("Starting control...")
-            self.control_app.start_control()
-
-            self.startbutton.configure(text="Stop")
-
-        # Inversion de l'état
-        self.is_running = not self.is_running
-
-    def run(self) -> None:
-        """Start the main application loop."""
-        self.root.mainloop()
-
-
-# Exemple de classe de contrôle
-class ControlApp:
     def start_control(self):
-        print("Starting control...")
+        print("Démarrage du contrôle...")
+        return self.tracking
 
-    def stop_calibration(self):
-        print("Stopping calibration...")
+    def start_calibration(self, tracking):
+        self.calibration = CalibrationManager(tracking_manager=tracking)
+        self.calibration.start_calibration()
+
+        if self.calibration.calibrated:
+            print("Calibration réussie. Lancement du suivi souris.")
+            self.running = True
+            mouse_thread = threading.Thread(target=self._follow_mouse, daemon=True)
+            mouse_thread.start()
+        else:
+            print("Calibration échouée ou annulée.")
+
+    def _follow_mouse(self):
+        """Bouge la souris selon la position transformée du suivi."""
+        while self.running:
+            pos = self.calibration.get_mouse_position()
+            if pos:
+                x, y = int(pos[0]), int(pos[1])
+                pyautogui.moveTo(x, y, duration=0.05)  # Déplacement fluide
+            time.sleep(0.01)  # Fréquence de mise à jour
+
+    def stop_control(self):
+        self.running = False
+        if self.tracking:
+            self.tracking.stop_tracking()
+            self.tracking.stop_debug_display()
+        print("Fin du programme")
 
 
 if __name__ == "__main__":
-    control = ControlApp()  # Instance de contrôle
-    app = MainGUI(control)  # Passage de l'instance à l'interface graphique
-    app.run()
+    control_app = Control()
+    tracking = control_app.launch_tracking()
+    control_app.start_control()
+    control_app.start_calibration(tracking)
+
+    try:
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        control_app.stop_control()
 
 
-# # from tracking import TrackingManager
-# from core.tracking import TrackingManager
+# from tracking import TrackingManager
+# # from core.tracking import TrackingManager
 # from core.calibration import Calibration
 # #from tracking import TrackingManager # When using the control module directly
 # import time
+# import threading
+
 
 
 # class Control:
@@ -112,11 +76,20 @@ if __name__ == "__main__":
 #         self.tracking = None
 #         self.calibration = None
 
-#     def start_control(self):
+
+#     def lauch_tracking(self):
 #         self.tracking = TrackingManager(camera_index=0,color_mode="JAUNE")
-#         calibration = Calibration(tracking_manager=self.tracking)
 #         self.tracking.start_tracking()
-#         self.tracking.debug_display()
+#         return self.tracking
+    
+#     def start_control(self):
+#         # self.tracking = TrackingManager(camera_index=0,color_mode="JAUNE")
+#         # self.thread_tracking = threading.Thread(target=self.tracking.start_tracking, daemon=True)
+#         # self.thread_tracking.start()
+#         # calibration = Calibration(tracking_manager=self.tracking)
+#         # self.tracking.start_tracking()
+#         # self.tracking.debug_display()
+#         print("Démarrage du controle...")
 #         return self.tracking
         
 #     def start_calibration(self, tracking):

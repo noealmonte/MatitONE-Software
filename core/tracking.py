@@ -1,8 +1,8 @@
 import cv2
 import numpy as np
 import threading
-from core.camera import CameraManager # When using the main.py file
-#from camera import CameraManager # When using the camera module directly
+# from core.camera import CameraManager # When using the main.py file
+from camera import CameraManager # When using the camera module directly
 
 class TrackingManager:
     def __init__(self,camera_index=0, color_mode="IR"):
@@ -10,7 +10,7 @@ class TrackingManager:
         Initialise le tracking avec une caméra et un mode de couleur.
         color_mode : "IR" ou "JAUNE"
         """
-        self.camera_manager = CameraManager(camera_index)  # Créer une instance de CameraManager
+        self.camera_manager = CameraManager(camera_index, flip_horizontal=True , flip_vertical =True)  # Créer une instance de CameraManager
         self.camera_manager.start_camera()
         self.running = False
         self.thread = None
@@ -31,6 +31,7 @@ class TrackingManager:
     def _tracking_loop(self):
         """Boucle qui récupère les frames et détecte l’objet"""
         while self.running:
+            #qprint("Tracking..")
             frame = self.camera_manager.get_frame()
             if frame is not None:
                 self.last_position = self._process_frame(frame)
@@ -45,6 +46,7 @@ class TrackingManager:
            # return self._track_yellow_with_mask(frame)
         elif self.color_mode == "IR":
             return self._track_white(frame)
+            #return self._track_IR(frame)
         else:
             print("Erreur : Mode de couleur non pris en charge.")
         return None
@@ -64,6 +66,8 @@ class TrackingManager:
         upper_white = np.array([180, 25, 255])
         mask = cv2.inRange(hsv, lower_white, upper_white)
         return self._find_largest_contour(mask)
+    
+   
         
     def _find_largest_contour(self, binary_mask):
         """Trouve le plus grand contour et renvoie ses coordonnées"""
@@ -80,26 +84,70 @@ class TrackingManager:
 
     def stop_tracking(self):
         """Arrête le tracking"""
-        self.camera_manager.stop_camera()
         self.running = False
+        self.camera_manager.stop_camera()
+        # if self.thread:
+        #     self.thread.join()
 
     def debug_display(self):
-        """Affiche le tracking en direct avec un cadre autour de l’objet détecté"""
-        while True:
+        self.debug_running = True
+        while self.debug_running:
             frame = self.camera_manager.get_frame()
             if frame is not None:
                 display_frame = frame.copy()
                 if self.last_position:
                     x, y, w, h = self.last_position
                     cv2.rectangle(display_frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-                cv2.putText(display_frame, f"Mode: {self.color_mode}", (10, 30), 
+                cv2.putText(display_frame, f"Mode: {self.color_mode}", (10, 30),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
                 cv2.imshow("Debug Tracking", display_frame)
 
             if cv2.waitKey(1) & 0xFF == ord('q'):
+                self.debug_running = False
                 break
         cv2.destroyAllWindows()
     
     def stop_debug(self):
         """Arrête le debug proprement"""
         self.debug_running = False
+
+
+if __name__ == "__main__":
+    tracking_manager = TrackingManager(camera_index=0, color_mode="IR")
+    tracking_manager.start_tracking()
+    
+    thread_debug = threading.Thread(target=tracking_manager.debug_display)
+    thread_debug.start()
+
+    try:
+        while thread_debug.is_alive():
+            position = tracking_manager.get_position()
+            if position:
+                print("Position mesurée:", position)
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
+    except KeyboardInterrupt:
+        print("Arrêt manuel...")
+
+    # Arrêt propre
+    tracking_manager.stop_tracking()
+    tracking_manager.debug_running = False
+    thread_debug.join()
+    cv2.destroyAllWindows()
+    # tracking_manager = TrackingManager(camera_index=0, color_mode="JAUNE")
+    # tracking_manager.start_tracking()
+    # thread_debug = threading.Thread(target=tracking_manager.debug_display, daemon=True)
+    # thread_debug.start()
+    # # tracking_manager.debug_display()
+    # active = True
+    # while True:
+    #     print("Position mesurée:", tracking_manager.get_position())
+    #     if cv2.waitKey(1) & 0xFF == ord('q'):
+    #         break
+
+    # tracking_manager.stop_tracking()
+    # tracking_manager.stop_debug()
+    # cv2.destroyAllWindows()
+    # thread_debug.join()
+    # active = False
+        
