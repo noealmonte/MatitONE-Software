@@ -10,7 +10,7 @@ class TrackingManager:
         Initialise le tracking avec une caméra et un mode de couleur.
         color_mode : "IR" ou "JAUNE"
         """
-        self.camera_manager = CameraManager(camera_index, flip_horizontal=True , flip_vertical =True)  # Créer une instance de CameraManager
+        self.camera_manager = CameraManager(camera_index, flip_horizontal=True , flip_vertical =False)  # Créer une instance de CameraManager
         self.camera_manager.start_camera()
         self.running = False
         self.thread = None

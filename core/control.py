@@ -9,9 +9,9 @@ class Control:
         self.tracking = None
         self.calibration = None
         self.running = False
-
+       
     def launch_tracking(self):
-        self.tracking = TrackingManager(camera_index=1, color_mode="IR")
+        self.tracking = TrackingManager(camera_index=0, color_mode="JAUNE")
         self.tracking.start_tracking()
         return self.tracking
 
@@ -21,6 +21,7 @@ class Control:
 
     def start_calibration(self, tracking):
         self.calibration = CalibrationManager(tracking_manager=tracking)
+        # self.calibration = CalibrationManager(tracking, screen_size=(1920, 1080), screen_offset=(3840, 0))
         self.calibration.start_calibration()
 
         if self.calibration.calibrated:
