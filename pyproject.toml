@@ -6,13 +6,14 @@ authors = [
     {name = "Noé Almonte",email = "noe.almonte@outlook.com"}
 ]
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python =  ">=3.12,<3.14"
 dependencies = [
     "customtkinter (>=5.2.2,<6.0.0)",
     "opencv-contrib-python (>=4.11.0.86,<5.0.0.0)",
     "pillow (>=11.1.0,<12.0.0)",
     "serial (>=0.0.97,<0.0.98)",
-    "pyautogui (>=0.9.54,<0.10.0)"
+    "pyautogui (>=0.9.54,<0.10.0)",
+    "bleak (>=0.22.3,<0.23.0)"
 ]
 
 [tool.poetry]
