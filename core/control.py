@@ -10,8 +10,8 @@ class Control:
         self.calibration = None
         self.running = False
        
-    def launch_tracking(self):
-        self.tracking = TrackingManager(camera_index=0, color_mode="JAUNE")
+    def launch_tracking(self, camera_index=0, color_mode="JAUNE"):
+        self.tracking = TrackingManager(camera_index, color_mode)
         self.tracking.start_tracking()
         return self.tracking
 
@@ -51,7 +51,7 @@ class Control:
 
 if __name__ == "__main__":
     control_app = Control()
-    tracking = control_app.launch_tracking()
+    tracking = control_app.launch_tracking(camera_index=1, color_mode="IR")
     control_app.start_control()
     control_app.start_calibration(tracking)
 

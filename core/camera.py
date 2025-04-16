@@ -31,7 +31,7 @@ class CameraManager:
                 if self.flip_vertical:
                     frame = cv2.flip(frame, 0)
                 self.frame = frame
-                print("Frame capturée par caméra\n") 
+                # print("Frame capturée par caméra\n") 
 
     def get_frame(self):
         """Retourne la dernière image capturée"""
