@@ -5,12 +5,14 @@ import threading
 from camera import CameraManager # When using the camera module directly
 
 class TrackingManager:
-    def __init__(self,camera_index=0, color_mode="IR"):
+    def __init__(self,camera_index=0, color_mode="IR", flip_horizontal=False, flip_vertical=False):
         """
         Initialise le tracking avec une caméra et un mode de couleur.
         color_mode : "IR" ou "JAUNE"
         """
-        self.camera_manager = CameraManager(camera_index, flip_horizontal=False , flip_vertical =False)  # Créer une instance de CameraManager
+        self.flip_horizontal = flip_horizontal
+        self.flip_vertical = flip_vertical
+        self.camera_manager = CameraManager(camera_index, self.flip_horizontal , self.flip_vertical)  # Créer une instance de CameraManager
         self.camera_manager.start_camera()
         self.running = False
         self.thread = None
@@ -36,8 +38,7 @@ class TrackingManager:
             if frame is not None:
                 self.last_position = self._process_frame(frame)
                # print(f"Last position: {self.last_position}")
-        # # stop le thread
-        # self.thread.join()
+  
 
     def _process_frame(self, frame):
         """Traitement pour détecter l’objet en fonction de la couleur sélectionnée"""
@@ -67,7 +68,6 @@ class TrackingManager:
         mask = cv2.inRange(hsv, lower_white, upper_white)
         return self._find_largest_contour(mask)
     
-   
         
     def _find_largest_contour(self, binary_mask):
         """Trouve le plus grand contour et renvoie ses coordonnées"""
@@ -86,8 +86,7 @@ class TrackingManager:
         """Arrête le tracking"""
         self.running = False
         self.camera_manager.stop_camera()
-        # if self.thread:
-        #     self.thread.join()
+
 
     def debug_display(self):
         self.debug_running = True
@@ -112,7 +111,9 @@ class TrackingManager:
         self.debug_running = False
 
 
+# A UTILISER POUR TESTER LE MODULE SANS LANCER LE PROGRAMME PRINCIPAL
 if __name__ == "__main__":
+
     tracking_manager = TrackingManager(camera_index=0, color_mode="IR")
     tracking_manager.start_tracking()
     
