@@ -23,6 +23,7 @@ class SoftwareDetector:
         try:
             window_handle = win32gui.GetForegroundWindow()
             self.active_window_title = win32gui.GetWindowText(window_handle)
+            print(f"Titre détecté : {self.active_window_title}")  # debug
         except Exception as e:
             self.active_window_title = ""
             print(f"Erreur lors de la récupération de la fenêtre active: {e}")

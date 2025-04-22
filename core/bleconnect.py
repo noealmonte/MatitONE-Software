@@ -1,30 +1,35 @@
+
 import asyncio
-from bleak import BleakClient
+from bleak import BleakScanner, BleakClient
 
-# Adresse MAC ou UUID du périphérique (à adapter)
-DEVICE_ADDRESS = "XX:XX:XX:XX:XX:XX"  # Remplace par l'adresse MAC de l'Arduino
-CHARACTERISTIC_UUID = "abcdef01-1234-5678-1234-56789abcdef0"  # UUID de la caractéristique
+# UUIDs de votre Arduino
+SERVICE_UUID = "19B10000-E8F2-537E-4F6C-D104768A1214"
+CHARACTERISTIC_UUID = "19B10001-E8F2-537E-4F6C-D104768A1214"
+DEVICE_NAME = "Nano33BLE"  # Nom défini dans votre code Arduino
 
-async def notification_handler(sender, data):
-    """Callback qui s'exécute quand on reçoit des données."""
-    print(f"Données reçues de {sender}: {data.decode()}")
+async def scan_and_connect():
+    try:
+        print("🔍 Recherche de périphériques BLE...")
+        devices = await BleakScanner.discover()
+        arduino_address = None
+        for device in devices:
+            if device.name and DEVICE_NAME in device.name:
+                arduino_address = device.address
+                print(f"✅ Périphérique trouvé : {device.name} ({device.address})")
+                break
 
-async def main():
-    async with BleakClient(DEVICE_ADDRESS) as client:
-        if not await client.is_connected():
-            print("Impossible de se connecter à l'Arduino BLE")
+        if not arduino_address:
+            print("❌ Aucun périphérique Arduino trouvé !")
             return
-        
-        print("Connecté à l'Arduino BLE !")
-        
-        # Activer les notifications
-        await client.start_notify(CHARACTERISTIC_UUID, notification_handler)
-        
-        # Attendre la réception des données pendant 10 secondes
-        await asyncio.sleep(10)
 
-        # Désactiver les notifications
-        await client.stop_notify(CHARACTERISTIC_UUID)
+        async with BleakClient(arduino_address, timeout=10.0) as client:
+            print("🔗 Connecté à l'Arduino BLE !")
+            while True:
+                data = await client.read_gatt_char(CHARACTERISTIC_UUID)  # Lecture manuelle
+                print(f"📩 Message reçu : {data.decode()}")
+                await asyncio.sleep(1)
 
-# Exécuter l'événement asyncio
-asyncio.run(main())
+    except Exception as e:
+        print(f"❌ Erreur : {e}")
+
+asyncio.run(scan_and_connect())

@@ -4,8 +4,8 @@ import pyautogui  # Pour bouger la souris
 # from core.tracking import TrackingManager # with main.py
 # from core.testCalibrationHmgVideo import CalibrationManager
 from tracking import TrackingManager  # with main.py
-from testCalibrationHmgVideo import CalibrationManager
-# from testCalibrationHmgVideocopy import CalibrationManager  # with main.py
+# from testCalibrationHmgVideo import CalibrationManager
+from calibration_MatriceSave import CalibrationManager  # with main.py
 
 class Control:
     def __init__(self):
@@ -37,11 +37,6 @@ class Control:
 
     def _follow_mouse(self):
         """Bouge la souris selon la position transformée du suivi."""
-        # if not self.calibration.calibrated:
-        #     self.calibration = CalibrationManager(tracking_manager=self.tracking)
-        #     self.calibration.load_homography()
-        #     print("Chargement de l'homographie...")
-
         while self.running:
             pos = self.calibration.get_mouse_position()
             if pos:

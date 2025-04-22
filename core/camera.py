@@ -48,7 +48,7 @@ class CameraManager:
 
 
 if __name__ == "__main__":
-    camera_manager = CameraManager(camera_index=1, flip_horizontal=False)  # Changez l'index de la caméra si nécessaire
+    camera_manager = CameraManager(camera_index=1, flip_horizontal=False, flip_vertical=True)  # Changez l'index de la caméra si nécessaire
     camera_manager.start_camera()
     try:
         while True:
