@@ -36,7 +36,7 @@ class MainGUI:
         )
         self.title_label.pack(pady=20)
 
-        # Bouton Start/Stop
+        #------ Bouton Start/Stop control  ------
         self.startbutton = ctk.CTkButton(
             self.main_frame,
             text="Start",
@@ -50,13 +50,14 @@ class MainGUI:
         )
         self.status_label.pack(pady=20)
 
+    #------ Bouton Start/Stop control function  ------
     def toggle_start_stop(self):
         """Alterner entre Start et Stop."""
         if self.is_running:
             # Appel de stop_calibration() et mise à jour de l'interface
-            print("Stopping calibration...")
-            if hasattr(self.control_app, "stop_calibration"):
-                self.control_app.stop_calibration()
+            print("Sstop_control...")
+            if hasattr(self.control_app, "stop_control"):
+                self.control_app.stop_control()
             else:
                 print("Warning: stop_calibration() method not found in control_app")
 
@@ -71,24 +72,38 @@ class MainGUI:
         # Inversion de l'état
         self.is_running = not self.is_running
 
+
+
+
     def run(self) -> None:
         """Start the main application loop."""
         self.root.mainloop()
 
 
-# Exemple de classe de contrôle
-class ControlApp:
-    def start_control(self):
-        print("Starting control...")
-
-    def stop_calibration(self):
-        print("Stopping calibration...")
 
 
-if __name__ == "__main__":
-    control = ControlApp()  # Instance de contrôle
-    app = MainGUI(control)  # Passage de l'instance à l'interface graphique
-    app.run()
+
+
+
+
+
+
+
+
+
+# # Exemple de classe de contrôle
+# class ControlApp:
+#     def start_control(self):
+#         print("Starting control...")
+
+#     def stop_calibration(self):
+#         print("Stopping calibration...")
+
+
+# if __name__ == "__main__":
+#     control = ControlApp()  # Instance de contrôle
+#     app = MainGUI(control)  # Passage de l'instance à l'interface graphique
+#     app.run()
 
 
 

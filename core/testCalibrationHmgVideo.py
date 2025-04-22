@@ -244,6 +244,7 @@
 import cv2
 import numpy as np
 import threading
+# from core.tracking import TrackingManager  # ou depuis core.tracking si appelé depuis main
 from tracking import TrackingManager  # ou depuis core.tracking si appelé depuis main
 
 class CalibrationManager:

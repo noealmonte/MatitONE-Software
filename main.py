@@ -8,8 +8,8 @@ def main():
     print("Démarrage de l'application...")
     # Création des instances de GUI et de Control
     control_app = Control()
-    app = MainGUI(control_app)     
-    app.run()
+    guiapp = MainGUI(control_app)     
+    guiapp.run()
 
 if __name__ == "__main__":
     main()

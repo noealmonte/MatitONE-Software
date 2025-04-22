@@ -1,8 +1,11 @@
 import time
 import threading
 import pyautogui  # Pour bouger la souris
-from tracking import TrackingManager
+# from core.tracking import TrackingManager # with main.py
+# from core.testCalibrationHmgVideo import CalibrationManager
+from tracking import TrackingManager  # with main.py
 from testCalibrationHmgVideo import CalibrationManager
+# from testCalibrationHmgVideocopy import CalibrationManager  # with main.py
 
 class Control:
     def __init__(self):
@@ -34,6 +37,11 @@ class Control:
 
     def _follow_mouse(self):
         """Bouge la souris selon la position transformée du suivi."""
+        # if not self.calibration.calibrated:
+        #     self.calibration = CalibrationManager(tracking_manager=self.tracking)
+        #     self.calibration.load_homography()
+        #     print("Chargement de l'homographie...")
+
         while self.running:
             pos = self.calibration.get_mouse_position()
             if pos:
@@ -48,18 +56,28 @@ class Control:
             self.tracking.stop_debug_display()
         print("Fin du programme")
 
+    def connect_to_pen(self):
+        # Logique de connexion au stylo
+        print("Connexion au stylo...")
+        # self.pen = PenManager()
+        # self.pen.connect()
+
 
 if __name__ == "__main__":
     control_app = Control()
     tracking = control_app.launch_tracking(camera_index=0, color_mode="JAUNE", flip_horizontal=True, flip_vertical=False)
     control_app.start_control()
     control_app.start_calibration(tracking)
+    # mouse_thread = threading.Thread(target=control_app._follow_mouse, daemon=True)
+    # mouse_thread.start()
 
     try:
         while True:
             time.sleep(1)
     except KeyboardInterrupt:
         control_app.stop_control()
+
+
 
 
 # from tracking import TrackingManager
