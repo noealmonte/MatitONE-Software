@@ -3,9 +3,9 @@ import threading
 import pyautogui  # Pour bouger la souris
 # from core.tracking import TrackingManager # with main.py
 # from core.testCalibrationHmgVideo import CalibrationManager
-from tracking import TrackingManager  # with main.py
+from core.tracking import TrackingManager  # with main.py
 # from testCalibrationHmgVideo import CalibrationManager
-from calibration_MatriceSave import CalibrationManager  # with main.py
+from core.calibration import CalibrationManager  # with main.py
 
 class Control:
     def __init__(self):
@@ -37,12 +37,18 @@ class Control:
 
     def _follow_mouse(self):
         """Bouge la souris selon la position transformée du suivi."""
+        screen_width, screen_height = pyautogui.size()
+        # print(f"Résolution de l'écran : {screen_width}x{screen_height}")
         while self.running:
             pos = self.calibration.get_mouse_position()
             if pos:
                 x, y = int(pos[0]), int(pos[1])
-                pyautogui.moveTo(x, y, duration=0.05)  # Déplacement fluide
-            time.sleep(0.01)  # Fréquence de mise à jour
+                # Vérifie que les coordonnées sont valides
+                if 0 <= x < screen_width and 0 <= y < screen_height:
+                    pyautogui.moveTo(x, y, duration=0)  # Instantané (plus rapide)
+                else:
+                    print(f"Coordonnées invalides : ({x}, {y})")
+            time.sleep(0.005) # 
 
     def stop_control(self):
         self.running = False

@@ -58,7 +58,7 @@ class Control:
                     pyautogui.moveTo(x, y, duration=0)  # Instantané (plus rapide)
                 else:
                     print(f"Coordonnées invalides : ({x}, {y})")
-            time.sleep(0.005)  # Mise à jour plus fréquente
+            time.sleep(0.005) # 
 
     def stop_control(self):
         self.running = False

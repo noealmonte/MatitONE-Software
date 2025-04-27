@@ -1,108 +1,162 @@
+#VERSION FONCTIONNELLE SANS PROJECTION SUR L'ECRAN, A GARDER
 import cv2
 import numpy as np
 import threading
-import time
-from tracking import TrackingManager
-#from core.tracking import TrackingManager
+import os
+from core.tracking import TrackingManager  # ou depuis core.tracking si appelé depuis main
+# from tracking import TrackingManager  # ou depuis core.tracking si appelé depuis main
 
-class Calibration:
-    def __init__(self, tracking_manager, real_points=None):
-        """
-        Initialise la calibration avec le gestionnaire de tracking et les points réels de calibration.
-        
-        Args:
-            tracking_manager (TrackingManager): Instance du gestionnaire de tracking.
-            real_points (list): Liste des points réels correspondants aux points de calibration dans l'image.
-        """
+class CalibrationManager:
+    def __init__(self, tracking_manager, screen_size=(3840, 2400)):
         self.tracking_manager = tracking_manager
-        self.real_points = real_points if real_points else [(0, 0), (100, 0), (100, 100), (0, 100)]  # Points en mm
-        self.image_points = []  # Points collectés via le tracking
-        self.homography_matrix = None  # Matrice d'homographie
-        self.calibration_complete = False
-        self.collecting_points = True
-        self.lock = threading.Lock()
-        
-        # On démarre le thread de calibration
-        self.calibration_thread = threading.Thread(target=self._calibration_loop, daemon=True)
-        self.calibration_thread.start()
+        delta = 50 # zone de détection en pixels
+        self.screen_points = [
+            (0+delta, 0+delta),
+            (screen_size[0]-delta, 0+delta),
+            (screen_size[0]-delta, screen_size[1]-delta),
+            (0+delta, screen_size[1]-delta)
+        ]
+        # self.screen_points = [
+        #     (0, 0),
+        #     (screen_size[0], 0),
+        #     (screen_size[0], screen_size[1]),
+        #     (0, screen_size[1])
+        # ]
+        self.camera_points = []
+        self.homography = None
+        self.calibrated = False
+        self.calibration_path = "calibration_data/homography.npy"
 
-    def _calibration_loop(self):
-        """Boucle pour collecter les points de calibration et calculer l'homographie."""
-        while self.collecting_points:
-            # On récupère la position de l'objet via le tracking manager
-            position = self.tracking_manager.get_position()
-            if position:
-                x, y, w, h = position
-                # Calculer le centre de l'objet
-                center_x = x + w // 2
-                center_y = y + h // 2
-                self._collect_point((center_x, center_y))
-            time.sleep(0.1)
+        # Charger l'homographie existante si elle existe
+        self._ensure_data_folder()
+        self.load_homography()
 
-    def _collect_point(self, detected_point):
-        """Collecte un point et l'ajoute à la liste des points collectés."""
-        with self.lock:
-            if len(self.image_points) < len(self.real_points):
-                self.image_points.append(detected_point)
-                print(f"Point collecté : {detected_point}, Points collectés : {len(self.image_points)}")
-            
-            # Si on a collecté tous les points, on effectue la calibration
-            if len(self.image_points) == len(self.real_points):
-                self._calculate_homography()
+    def _ensure_data_folder(self):
+        os.makedirs(os.path.dirname(self.calibration_path), exist_ok=True)
+
+
+    def _mouse_callback(self, event, x, y, flags, param):
+        if event == cv2.EVENT_LBUTTONDOWN:
+            self.mouse_clicked = True
+
+    def start_calibration(self):
+        print("Calibration en cours... Suivez les instructions.")
+        self.tracking_manager.start_tracking()
+        self.mouse_clicked = False
+        idx = 0
+
+        while idx < len(self.screen_points):
+            frame = self.tracking_manager.camera_manager.get_frame()
+            pos = self.tracking_manager.get_position()
+
+            if frame is not None:
+                display = frame.copy()
+                h, w, _ = frame.shape
+                # print("h et w",h, w)
+
+                # Affichage des points cibles
+                for i, pt in enumerate(self.screen_points):
+                    color = (0, 255, 0) if i == idx else (100, 100, 100)
+                    # cv2.circle(display, (int(pt[0] * w / 1920), int(pt[1] * h / 1080)), 10, color, -1)
+                    cv2.circle(display, (int(pt[0] * w / self.screen_points[2][0]), int(pt[1] * h / self.screen_points[2][1])), 10, color, -1)
+
+
+                # Affichage de la position détectée
+                if pos:
+                    x, y, w_rect, h_rect = pos
+                    center = (x + w_rect // 2, y + h_rect // 2)
+                    cv2.circle(display, center, 5, (0, 0, 255), -1)
+
+                cv2.putText(display, f"Point {idx + 1}/4 - Appuyez sur Espace", (10, 30),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
+
+                cv2.imshow("Calibration", display)
+                cv2.setMouseCallback("Calibration", self._mouse_callback)
+
+                key = cv2.waitKey(1) & 0xFF
+                if key == 27:  # ESC
+                    print("Calibration annulée.")
+                    break
+                elif (key == 32 or self.mouse_clicked) and pos:
+                    center = (pos[0] + pos[2] // 2, pos[1] + pos[3] // 2)
+                    self.camera_points.append(center)
+                    print(f"Point {idx+1} enregistré à {center}")
+                    idx += 1
+                    self.mouse_clicked = False
+
+        cv2.destroyWindow("Calibration")
+
+        if len(self.camera_points) == 4:
+            self._compute_homography()
+            self._save_homography()
+            self.calibrated = True
+            print("Calibration réussie.")
+        else:
+            print("Calibration incomplète.")
+
+    def _compute_homography(self):
+        camera_pts = np.array(self.camera_points, dtype=np.float32)
+        screen_pts = np.array(self.screen_points, dtype=np.float32)
+        self.homography, _ = cv2.findHomography(camera_pts, screen_pts)
+
+    def _save_homography(self):
+        if self.homography is not None:
+            np.save(self.calibration_path, self.homography)
+            print(f"Homographie sauvegardée dans '{self.calibration_path}'")
+
+    # Si matrice existante, ne calibre pas
+    def load_homography(self):
+        if os.path.exists(self.calibration_path):
+            self.homography = np.load(self.calibration_path)
+            self.calibrated = True
+            self.tracking_manager.start_tracking()
+            print(f"Homographie chargée depuis '{self.calibration_path}'")
+            return True
+        print("Aucune homographie trouvée.")
+        return False
+
+    def get_mouse_position(self):
+        if not self.calibrated or self.homography is None:
+            return None
+
+        pos = self.tracking_manager.get_position()
+        if pos is None:
+            # print("ici")
+            return None
+
+        # # Affichage de la position trackée pour le débogage
+        # frame = self.tracking_manager.camera_manager.get_frame()
+        # if frame is not None:
+        #     display_frame = frame.copy()
+        #     if pos:
+        #         x, y, w, h = pos
+        #         cv2.rectangle(display_frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+        #     cv2.putText(display_frame, f"Mode:Jaune", (10, 30),
+        #                 cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+        #     cv2.imshow("Debug Tracking", display_frame)
+        # #---------------------------------
+
+
+        center = np.array([[pos[0] + pos[2] // 2, pos[1] + pos[3] // 2]], dtype=np.float32)
+        center = np.array([center])
+        transformed = cv2.perspectiveTransform(center, self.homography)
+        return tuple(transformed[0][0])
     
-    def _calculate_homography(self):
-        """Calcule la matrice d'homographie à partir des points collectés."""
-        if len(self.image_points) == len(self.real_points):
-            print("Calcul de l'homographie en cours...")
-            # Conversion des points en numpy arrays pour OpenCV
-            image_pts = np.array(self.image_points, dtype=np.float32)
-            real_pts = np.array(self.real_points, dtype=np.float32)
-            
-            # Calcul de la matrice d'homographie
-            self.homography_matrix, _ = cv2.findHomography(image_pts, real_pts)
-            self.calibration_complete = True
-            print("Calibration terminée!")
-
-    def apply_homography(self, point):
-        """Applique la matrice d'homographie à un point donné."""
-        if self.homography_matrix is not None:
-            point_array = np.array([point[0], point[1], 1.0], dtype=np.float32).reshape(3, 1)
-            transformed_point = np.dot(self.homography_matrix, point_array)
-            # Normaliser pour obtenir les coordonnées en 2D
-            transformed_point = transformed_point / transformed_point[2]
-            return transformed_point[0], transformed_point[1]
-        return None
     
-    def stop_calibration(self):
-        """Arrête la collecte de points et ferme le processus de calibration."""
-        self.collecting_points = False
-        print("Calibration arrêtée.")
-
-    def get_homography_matrix(self):
-        """Renvoie la matrice d'homographie calculée."""
-        return self.homography_matrix
-
-    def is_calibration_complete(self):
-        """Vérifie si la calibration est terminée."""
-        return self.calibration_complete
-
+# Exemple d'utilisation en dehors
 if __name__ == "__main__":
-     # Initialisation du TrackingManager
-    tracking_manager = TrackingManager(camera_index=0, color_mode="JAUNE")
-    tracking_manager.start_tracking()
+    tracker = TrackingManager(camera_index=0, color_mode="JAUNE", flip_horizontal=True, flip_vertical=False)
+    calibration = CalibrationManager(tracker)
 
-    # Initialisation de la calibration
-    calibration = Calibration(tracking_manager)
-    
-    # Attendre la fin de la calibration
-    while not calibration.is_calibration_complete():
-        time.sleep(1)
-    
-    # Une fois la calibration terminée, obtenir la matrice d'homographie
-    homography_matrix = calibration.get_homography_matrix()
-    print("Matrice d'Homographie calculée:", homography_matrix)
+    if not calibration.calibrated:
+        calibration.start_calibration()
 
-    # Appliquer l'homographie à un point détecté
-    point = (150, 200)  # Exemple de point à transformer
-    real_coords = calibration.apply_homography(point)
-    print(f"Point transformé : {real_coords}")
+    while calibration.calibrated:
+        pos = calibration.get_mouse_position()   
+        if pos:
+            print("Position souris :", pos)
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+
+    tracker.stop_tracking()
+    

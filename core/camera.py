@@ -1,6 +1,6 @@
 import cv2
 import threading
-
+# test
 class CameraManager:
     def __init__(self, camera_index=0,flip_horizontal=False , flip_vertical =False):
         self.camera_index = camera_index
