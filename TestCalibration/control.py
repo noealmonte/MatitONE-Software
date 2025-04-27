@@ -48,24 +48,18 @@ class Control:
     def _follow_mouse(self):
         """Bouge la souris selon la position transformée du suivi."""
         screen_width, screen_height = pyautogui.size()
-
+        # print(f"Résolution de l'écran : {screen_width}x{screen_height}")
         while self.running:
             pos = self.calibration.get_mouse_position()
             if pos:
                 x, y = int(pos[0]), int(pos[1])
-
                 # Vérifie que les coordonnées sont valides
                 if 0 <= x < screen_width and 0 <= y < screen_height:
                     pyautogui.moveTo(x, y, duration=0)  # Instantané (plus rapide)
+                else:
+                    print(f"Coordonnées invalides : ({x}, {y})")
             time.sleep(0.005)  # Mise à jour plus fréquente
 
-# Limiter les coordonnées à des valeurs valides (non négatives)
-                # x = max(0, x)
-                # y = max(0, y)
-                # # Limiter à l'écran
-                # screen_width, screen_height = pyautogui.size()
-                # x = max(0, min(screen_width - 1, int(x)))
-                # y = max(0, min(screen_height - 1, int(y)))
     def stop_control(self):
         self.running = False
         if self.tracking:
@@ -82,7 +76,7 @@ class Control:
 
 if __name__ == "__main__":
     control_app = Control()
-    tracking = control_app.launch_tracking(camera_index=1, color_mode="IR", flip_horizontal=True, flip_vertical=True)
+    tracking = control_app.launch_tracking(camera_index=0, color_mode="JAUNE", flip_horizontal=True, flip_vertical=False)
     control_app.start_control()
     control_app.start_calibration(tracking)
     # mouse_thread = threading.Thread(target=control_app._follow_mouse, daemon=True)
