@@ -1,17 +1,19 @@
 import time
 import threading
 import pyautogui  # Pour bouger la souris
-# from core.tracking import TrackingManager # with main.py
-# from core.testCalibrationHmgVideo import CalibrationManager
-from core.tracking import TrackingManager  # with main.py
-# from testCalibrationHmgVideo import CalibrationManager
-from core.calibration import CalibrationManager  # with main.py
+
+from tracking import TrackingManager # with control.py
+# from core.tracking import TrackingManager  # with main.py
+
+from calibration import CalibrationManager  # with control.py
+# from core.calibration import CalibrationManager  # with main.py
 
 class Control:
     def __init__(self):
         self.tracking = None
         self.calibration = None
         self.running = False
+        self.smooth_pos = None  # Position lissée pour le mouvement de la souris
        
     def launch_tracking(self, camera_index=0, color_mode="JAUNE", flip_horizontal=False, flip_vertical=False):
         self.tracking = TrackingManager(camera_index, color_mode, flip_horizontal, flip_vertical)
@@ -22,11 +24,13 @@ class Control:
         print("Démarrage du contrôle...")
         return self.tracking
 
-    def start_calibration(self, tracking):
-        self.calibration = CalibrationManager(tracking_manager=tracking)
-        # self.calibration = CalibrationManager(tracking, screen_size=(1920, 1080), screen_offset=(3840, 0))
-        self.calibration.start_calibration()
-
+    def start_calibration(self, tracking, screen_size):
+        self.calibration = CalibrationManager(tracking_manager=tracking, screen_size=screen_size)
+        if self.calibration.is_loaded == True:
+            print("Calibration déjà effectuée.")
+        else:
+            self.calibration.start_calibration()
+            
         if self.calibration.calibrated:
             print("Calibration réussie. Lancement du suivi souris.")
             self.running = True
@@ -50,6 +54,28 @@ class Control:
                     print(f"Coordonnées invalides : ({x}, {y})")
             time.sleep(0.005) # 
 
+
+    # Suivit avec lissage de la souris
+    # def _follow_mouse(self):
+    #     screen_width, screen_height = pyautogui.size()
+    #     alpha = 0.2  # Coefficient de lissage (entre 0 et 1)
+        
+    #     while self.running:
+    #         pos = self.calibration.get_mouse_position()
+    #         if pos:
+    #             x, y = int(pos[0]), int(pos[1])
+    #             if 0 <= x < screen_width and 0 <= y < screen_height:
+    #                 if self.smooth_pos is None:
+    #                     self.smooth_pos = (x, y)
+    #                 else:
+    #                     old_x, old_y = self.smooth_pos
+    #                     new_x = int(old_x + alpha * (x - old_x))
+    #                     new_y = int(old_y + alpha * (y - old_y))
+    #                     self.smooth_pos = (new_x, new_y)
+
+    #                 pyautogui.moveTo(self.smooth_pos[0], self.smooth_pos[1], duration=0)
+    #         # time.sleep(0.005)
+
     def stop_control(self):
         self.running = False
         if self.tracking:
@@ -68,82 +94,10 @@ if __name__ == "__main__":
     control_app = Control()
     tracking = control_app.launch_tracking(camera_index=0, color_mode="JAUNE", flip_horizontal=True, flip_vertical=False)
     control_app.start_control()
-    control_app.start_calibration(tracking)
-    # mouse_thread = threading.Thread(target=control_app._follow_mouse, daemon=True)
-    # mouse_thread.start()
-
+    control_app.start_calibration(tracking,screen_size = pyautogui.size())
+   
     try:
         while True:
-            time.sleep(1)
+            time.sleep(1) 
     except KeyboardInterrupt:
         control_app.stop_control()
-
-
-
-
-# from tracking import TrackingManager
-# # from core.tracking import TrackingManager
-# from core.calibration import Calibration§
-# #from tracking import TrackingManager # When using the control module directly
-# import time
-# import threading
-
-
-
-# class Control:
-#     def __init__(self):
-#         pass
-#         self.tracking = None
-#         self.calibration = None
-
-
-#     def lauch_tracking(self):
-#         self.tracking = TrackingManager(camera_index=0,color_mode="JAUNE")
-#         self.tracking.start_tracking()
-#         return self.tracking
-    
-#     def start_control(self):
-#         # self.tracking = TrackingManager(camera_index=0,color_mode="JAUNE")
-#         # self.thread_tracking = threading.Thread(target=self.tracking.start_tracking, daemon=True)
-#         # self.thread_tracking.start()
-#         # calibration = Calibration(tracking_manager=self.tracking)
-#         # self.tracking.start_tracking()
-#         # self.tracking.debug_display()
-#         print("Démarrage du controle...")
-#         return self.tracking
-        
-#     def start_calibration(self, tracking):
-#         calibration = Calibration(tracking_manager=tracking)
-#         # Attendre la fin de la calibration
-#         while not calibration.is_calibration_complete():
-#             time.sleep(1)
-        
-#         # Une fois la calibration terminée, obtenir la matrice d'homographie
-#         homography_matrix = calibration.get_homography_matrix()
-#         print("Matrice d'Homographie calculée:", homography_matrix)
-
-#         # self.point = self.tracking.get_last_position()
-#         # mouse_coords = calibration.apply_homography(self.point)
-#         # Appliquer l'homographie à un point détecté
-#         point = (150, 200)  # Exemple de point à transformer
-#         real_coords = calibration.apply_homography(point)
-#         print(f"Point transformé : {real_coords}")
-
-#     def stop_control(self):
-#         self.tracking.stop_tracking()
-#         self.tracking.stop_debug_display()
-#         print("Fin du programme")   
-
-    
-
-
-# if __name__ == "__main__":
-#     control_app = Control()
-#     tracking = control_app.start_control()
-#     control_app.start_calibration(tracking)
-
-    
-
-
-
-

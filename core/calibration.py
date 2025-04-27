@@ -3,8 +3,9 @@ import cv2
 import numpy as np
 import threading
 import os
-from core.tracking import TrackingManager  # ou depuis core.tracking si appelé depuis main
-# from tracking import TrackingManager  # ou depuis core.tracking si appelé depuis main
+
+from tracking import TrackingManager  # with control.py
+# from core.tracking import TrackingManager  # with main.py
 
 class CalibrationManager:
     def __init__(self, tracking_manager, screen_size=(3840, 2400)):
@@ -29,7 +30,8 @@ class CalibrationManager:
 
         # Charger l'homographie existante si elle existe
         self._ensure_data_folder()
-        self.load_homography()
+        self.is_loaded = self.load_homography()
+        
 
     def _ensure_data_folder(self):
         os.makedirs(os.path.dirname(self.calibration_path), exist_ok=True)
@@ -143,6 +145,7 @@ class CalibrationManager:
         return tuple(transformed[0][0])
     
     
+
 # Exemple d'utilisation en dehors
 if __name__ == "__main__":
     tracker = TrackingManager(camera_index=0, color_mode="JAUNE", flip_horizontal=True, flip_vertical=False)
