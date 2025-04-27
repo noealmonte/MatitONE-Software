@@ -1,8 +1,8 @@
 import cv2
 import numpy as np
 import threading
-# from core.camera import CameraManager # When using the main.py file
-from camera import CameraManager # When using the camera module directly
+from core.camera import CameraManager # When using the main.py file
+# from camera import CameraManager # When using the camera module directly
 
 class TrackingManager:
     def __init__(self,camera_index=0, color_mode="IR", flip_horizontal=False, flip_vertical=False):

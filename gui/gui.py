@@ -79,15 +79,9 @@ class MainGUI:
         """Start the main application loop."""
         self.root.mainloop()
 
-
-
-
-
-
-
-
-
-
+if __name__ == "__main__":
+    app = MainGUI()
+    app.run()
 
 
 

@@ -4,8 +4,8 @@ import numpy as np
 import threading
 import os
 
-from tracking import TrackingManager  # with control.py
-# from core.tracking import TrackingManager  # with main.py
+# from tracking import TrackingManager  # with control.py
+from core.tracking import TrackingManager  # with main.py
 
 class CalibrationManager:
     def __init__(self, tracking_manager, screen_size=(3840, 2400)):
@@ -35,7 +35,6 @@ class CalibrationManager:
 
     def _ensure_data_folder(self):
         os.makedirs(os.path.dirname(self.calibration_path), exist_ok=True)
-
 
     def _mouse_callback(self, event, x, y, flags, param):
         if event == cv2.EVENT_LBUTTONDOWN:
