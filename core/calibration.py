@@ -4,13 +4,13 @@ import numpy as np
 import threading
 import os
 
-# from tracking import TrackingManager  # with control.py
-from core.tracking import TrackingManager  # with main.py
+from tracking import TrackingManager  # with control.py
+# from core.tracking import TrackingManager  # with main.py
 
 class CalibrationManager:
     def __init__(self, tracking_manager, screen_size=(3840, 2400)):
         self.tracking_manager = tracking_manager
-        delta = 50 # zone de détection en pixels
+        delta = 10 # zone de détection en pixels
         self.screen_points = [
             (0+delta, 0+delta),
             (screen_size[0]-delta, 0+delta),

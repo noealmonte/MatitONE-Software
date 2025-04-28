@@ -1,6 +1,7 @@
 import threading
 import time
 from pen import Pen
+import pyautogui  # Assurez-vous d'avoir installé pyautogui
 from softwareDetector import SoftwareDetector  # <- On importe ton détecteur
 
 class PenLogic:
@@ -44,10 +45,14 @@ class PenLogic:
         """Traite les messages reçus du stylo BLE."""
         print(f"🖋️ Nouveau message reçu: {message}")
 
-        if message == "Salut":
+        if message == "S1":
             self.handle_switch1()
         elif message == "S2":
             self.handle_switch2()
+        elif message == "Sensor_Write": #START_WRITE
+            self.handle_sensor_write()
+        elif message == "Sensor_Release": #STOP_WRITE
+            self.handle_sensor_release()
         # Ajoute ici d'autres cas si besoin
 
     def handle_switch1(self):
@@ -57,6 +62,14 @@ class PenLogic:
             # Implémente ici une action spécifique
         elif self.current_software == "onenote":
             print("📝 Switch 1: Action spéciale pour OneNote")
+            # Simuler Alt + E
+            pyautogui.keyDown('alt')
+            pyautogui.press('e')
+            pyautogui.keyUp('alt')  
+            # Simuler G puis G G
+            pyautogui.press('g')
+            pyautogui.press('g')
+            pyautogui.press('g')
             # Implémente ici une action spécifique
         else:
             print("🔄 Switch 1: Action générique (aucun logiciel spécifique)")
@@ -69,6 +82,21 @@ class PenLogic:
             print("📝 Switch 2: Action secondaire pour OneNote")
         else:
             print("🔄 Switch 2: Action générique (aucun logiciel spécifique)")
+
+    def handle_sensor_write(self):
+        """Action pour le capteur d'écriture."""
+        if self.current_software == "whiteboard":
+            pyautogui.mouseDown()  # Simule le clic gauche de la souris
+        elif self.current_software == "onenote":
+            pyautogui.mouseDown()  # Simule le clic gauche de la souris
+            print("📝 Écriture détectée sur OneNote")
+        else:
+            pyautogui.mouseDown()
+            print("🔄 Écriture détectée (aucun logiciel spécifique)")
+
+    def handle_sensor_release(self):
+        """Action pour le relâchement du capteur d'écriture."""
+        pyautogui.mouseUp()  # Simule le relâchement du clic gauche de la souris
 
 
 if __name__ == "__main__":

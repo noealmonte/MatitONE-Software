@@ -2,11 +2,11 @@ import time
 import threading
 import pyautogui  # Pour bouger la souris
 
-# from tracking import TrackingManager # with control.py
-from core.tracking import TrackingManager  # with main.py
+from tracking import TrackingManager # with control.py
+# from core.tracking import TrackingManager  # with main.py
 
-# from calibration import CalibrationManager  # with control.py
-from core.calibration import CalibrationManager  # with main.py
+from calibration import CalibrationManager  # with control.py
+# from core.calibration import CalibrationManager  # with main.py
 
 class Control:
     def __init__(self):
