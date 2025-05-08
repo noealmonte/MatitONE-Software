@@ -2,7 +2,7 @@ import cv2
 import threading
 
 class CameraManager:
-    def __init__(self, camera_index=0,flip_horizontal=False , flip_vertical =False):
+    def __init__(self, camera_index=0, flip_horizontal=False, flip_vertical=False):
         self.camera_index = camera_index
         self.cap = None
         self.running = False
@@ -10,45 +10,61 @@ class CameraManager:
         self.thread = None
         self.flip_horizontal = flip_horizontal
         self.flip_vertical = flip_vertical
+        self.lock = threading.Lock()  # Verrou pour protéger l'accès à la caméra
 
     def start_camera(self):
-        """Démarre la capture vidéo en arrière-plan"""
+        """Démarre la capture vidéo en arrière-plan."""
         if self.running:
-            return  
-        self.running = True
-        self.cap = cv2.VideoCapture(self.camera_index,cv2.CAP_DSHOW) # enlever CAP_DSHOW si besoin
-        self.thread = threading.Thread(target=self._capture_loop, daemon=True)
-        self.thread.start()
-        # self._capture_loop()
+            print("La caméra est déjà en cours d'exécution.")
+            return
+        try:
+            self.cap = cv2.VideoCapture(self.camera_index, cv2.CAP_DSHOW)
+            if not self.cap.isOpened():
+                raise Exception(f"Impossible d'ouvrir la caméra avec l'index {self.camera_index}.")
+            self.running = True
+            self.thread = threading.Thread(target=self._capture_loop, daemon=True)
+            self.thread.start()
+            print("Caméra démarrée avec succès.")
+        except Exception as e:
+            print(f"Erreur lors du démarrage de la caméra : {e}")
+            self.running = False
 
     def _capture_loop(self):
-        """Boucle de capture vidéo"""
+        """Boucle de capture vidéo."""
         while self.running:
-            ret, frame = self.cap.read()
-            if ret:
-                if self.flip_horizontal:
-                    frame = cv2.flip(frame, 1)  # effet miroir horizontal
-                if self.flip_vertical:
-                    frame = cv2.flip(frame, 0)
-                self.frame = frame
-                # print("Frame capturée par caméra\n") 
+            try:
+                with self.lock:  # Protéger l'accès à la caméra
+                    ret, frame = self.cap.read()
+                    if not ret:
+                        print("Erreur lors de la capture de la frame.")
+                        continue
+                    if self.flip_horizontal:
+                        frame = cv2.flip(frame, 1)
+                    if self.flip_vertical:
+                        frame = cv2.flip(frame, 0)
+                    self.frame = frame
+            except Exception as e:
+                print(f"Erreur dans la boucle de capture : {e}")
+                break
 
     def get_frame(self):
-        """Retourne la dernière image capturée"""
-        return self.frame
+        """Retourne la dernière image capturée."""
+        with self.lock:  # Protéger l'accès à la frame
+            return self.frame
 
     def stop_camera(self):
-        """Arrête la caméra proprement"""
+        """Arrête la caméra proprement."""
         self.running = False
-        if self.cap:
-            self.cap.release()
-        self.cap = None
-        # arrêter le thread ? a revoir avec prof
-
-
+        if self.thread:
+            self.thread.join()  # Attendre la fin du thread
+        with self.lock:  # Protéger l'accès à la caméra
+            if self.cap:
+                self.cap.release()
+                self.cap = None
+        print("Caméra arrêtée proprement.")
 
 if __name__ == "__main__":
-    camera_manager = CameraManager(camera_index=1, flip_horizontal=False, flip_vertical=True)  # Changez l'index de la caméra si nécessaire
+    camera_manager = CameraManager(camera_index=0, flip_horizontal=False, flip_vertical=True)
     camera_manager.start_camera()
     try:
         while True:

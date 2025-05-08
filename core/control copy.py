@@ -1,6 +1,7 @@
 import time
 import threading
 import pyautogui  # Pour bouger la souris
+import pynput  # Pour lire les entrées clavier
 
 from tracking import TrackingManager # with control.py
 # from core.tracking import TrackingManager  # with main.py
@@ -18,6 +19,7 @@ class Control:
         self.pen_logic = None  # <- Ajoute ça pour le stylo
         self.running = False
         self.smooth_pos = None
+        self.mouse = pynput.mouse.Controller()
 
     def launch_tracking(self, camera_index=0, color_mode="JAUNE", flip_horizontal=False, flip_vertical=False):
         self.tracking = TrackingManager(camera_index, color_mode, flip_horizontal, flip_vertical)
@@ -50,7 +52,8 @@ class Control:
             if pos:
                 x, y = int(pos[0]), int(pos[1])
                 if 0 <= x < screen_width and 0 <= y < screen_height:
-                    pyautogui.moveTo(x, y, duration=0)
+                    # pyautogui.moveTo(x, y, duration=0)
+                    self.mouse.position = (x, y)
                 else:
                     print(f"Coordonnées invalides : ({x}, {y})")
             time.sleep(0.005)
@@ -76,7 +79,7 @@ if __name__ == "__main__":
     control_app = Control()
 
     # Lancer tracking + calibration
-    tracking = control_app.launch_tracking(camera_index=0, color_mode="JAUNE", flip_horizontal=True, flip_vertical=False)
+    tracking = control_app.launch_tracking(camera_index=1, color_mode="IR", flip_horizontal=False, flip_vertical=True )
     control_app.start_control()
     control_app.start_calibration(tracking, screen_size=pyautogui.size())
 

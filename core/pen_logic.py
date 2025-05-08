@@ -48,7 +48,8 @@ class PenLogic:
         if message == "S1":
             self.handle_switch1()
         elif message == "S2":
-            self.handle_switch2()
+            # self.handle_switch2()
+            self.handle_sensor_write()
         elif message == "Sensor_Write": #START_WRITE
             self.handle_sensor_write()
         elif message == "Sensor_Release": #STOP_WRITE

@@ -39,6 +39,7 @@ class Control:
         else:
             print("Calibration échouée ou annulée.")
 
+    
     def _follow_mouse(self):
         """Bouge la souris selon la position transformée du suivi."""
         screen_width, screen_height = pyautogui.size()
@@ -92,7 +93,7 @@ class Control:
 
 if __name__ == "__main__":
     control_app = Control()
-    tracking = control_app.launch_tracking(camera_index=0, color_mode="JAUNE", flip_horizontal=True, flip_vertical=False)
+    tracking = control_app.launch_tracking(camera_index=1, color_mode="IR", flip_horizontal=False, flip_vertical=True)
     control_app.start_control()
     control_app.start_calibration(tracking,screen_size = pyautogui.size())
    
