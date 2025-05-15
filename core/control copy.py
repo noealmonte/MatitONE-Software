@@ -2,6 +2,8 @@ import time
 import threading
 import pyautogui  # Pour bouger la souris
 import pynput  # Pour lire les entrées clavier
+from pynput.mouse import Button
+
 
 from tracking import TrackingManager # with control.py
 # from core.tracking import TrackingManager  # with main.py
@@ -45,18 +47,82 @@ class Control:
         else:
             print("Calibration échouée ou annulée.")
 
+
     def _follow_mouse(self):
         screen_width, screen_height = pyautogui.size()
+        drawing = False
+
         while self.running:
             pos = self.calibration.get_mouse_position()
+
             if pos:
                 x, y = int(pos[0]), int(pos[1])
                 if 0 <= x < screen_width and 0 <= y < screen_height:
-                    # pyautogui.moveTo(x, y, duration=0)
                     self.mouse.position = (x, y)
+
+                    if not drawing:
+                        print("→ Pressing mouse button")
+                        self.mouse.press(Button.left)
+                        drawing = True
                 else:
-                    print(f"Coordonnées invalides : ({x}, {y})")
-            time.sleep(0.005)
+                    if drawing:
+                        print("→ Releasing mouse button (out of bounds)")
+                        self.mouse.release(Button.left)
+                        drawing = False
+            else:
+                if drawing:
+                    print("→ Releasing mouse button (no tracking)")
+                    self.mouse.release(Button.left)
+                    drawing = False
+
+            time.sleep(0.01)
+
+
+    # def _follow_mouse(self):
+    #     screen_width, screen_height = pyautogui.size()
+    #     while self.running:
+    #         pos = self.calibration.get_mouse_position()
+    #         if pos:
+    #             x, y = int(pos[0]), int(pos[1])
+    #             if 0 <= x < screen_width and 0 <= y < screen_height:
+    #                 # pyautogui.moveTo(x, y, duration=0)
+    #                 self.mouse.position = (x, y)
+    #                 #pyautogui.click()
+    #                 self.mouse.press(Button.left)
+    #                 time.sleep(0.1)  # Maintient le clic pendant 0.1 seconde
+    #                 self.mouse.release(Button.left)
+                    
+
+    #             else:
+    #                 print(f"Coordonnées invalides : ({x}, {y})")
+    #         #time.sleep(0.005)
+
+    # def _follow_mouse(self):
+    #     screen_width, screen_height = pyautogui.size()
+    #     drawing = True  # Suivi de l'état du "clic"
+
+    #     while self.running:
+    #         pos = self.calibration.get_mouse_position()
+    #         if pos:
+    #             x, y = int(pos[0]), int(pos[1])
+    #             if 0 <= x < screen_width and 0 <= y < screen_height:
+    #                 self.mouse.position = (x, y)
+
+    #                 if not drawing:
+    #                     self.mouse.press(Button.left)
+    #                     drawing = True
+
+    #             else:
+    #                 print(f"Coordonnées invalides : ({x}, {y})")
+    #                 if drawing:
+    #                     self.mouse.release(Button.left)
+    #                     drawing = False
+    #         else:
+    #             if drawing:
+    #                 self.mouse.release(Button.left)
+    #                 drawing = False
+
+    #         time.sleep(0.005)  # Évite d'inonder le système d'événements
 
     def connect_to_pen(self):
         print("Connexion au stylo...")
@@ -79,7 +145,7 @@ if __name__ == "__main__":
     control_app = Control()
 
     # Lancer tracking + calibration
-    tracking = control_app.launch_tracking(camera_index=1, color_mode="IR", flip_horizontal=False, flip_vertical=True )
+    tracking = control_app.launch_tracking(camera_index=1, color_mode="IR", flip_horizontal=True, flip_vertical=True )
     control_app.start_control()
     control_app.start_calibration(tracking, screen_size=pyautogui.size())
 
