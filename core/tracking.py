@@ -114,7 +114,7 @@ class TrackingManager:
 # A UTILISER POUR TESTER LE MODULE SANS LANCER LE PROGRAMME PRINCIPAL
 if __name__ == "__main__":
 
-    tracking_manager = TrackingManager(camera_index=0, color_mode="IR")
+    tracking_manager = TrackingManager(camera_index=1, color_mode="IR")
     tracking_manager.start_tracking()
     
     thread_debug = threading.Thread(target=tracking_manager.debug_display)

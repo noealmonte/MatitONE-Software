@@ -17,12 +17,7 @@ class CalibrationManager:
             (screen_size[0]-delta, screen_size[1]-delta),
             (0+delta, screen_size[1]-delta)
         ]
-        # self.screen_points = [
-        #     (0, 0),
-        #     (screen_size[0], 0),
-        #     (screen_size[0], screen_size[1]),
-        #     (0, screen_size[1])
-        # ]
+      
         self.camera_points = []
         self.homography = None
         self.calibrated = False
@@ -61,7 +56,6 @@ class CalibrationManager:
                     # cv2.circle(display, (int(pt[0] * w / 1920), int(pt[1] * h / 1080)), 10, color, -1)
                     cv2.circle(display, (int(pt[0] * w / self.screen_points[2][0]), int(pt[1] * h / self.screen_points[2][1])), 10, color, -1)
 
-
                 # Affichage de la position détectée
                 if pos:
                     x, y, w_rect, h_rect = pos
@@ -73,6 +67,7 @@ class CalibrationManager:
 
                 cv2.imshow("Calibration", display)
                 cv2.setMouseCallback("Calibration", self._mouse_callback)
+
 
                 key = cv2.waitKey(1) & 0xFF
                 if key == 27:  # ESC

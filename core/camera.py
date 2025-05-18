@@ -1,5 +1,6 @@
 import cv2
 import threading
+import sys  # À ajouter en haut du fichier
 
 class CameraManager:
     def __init__(self, camera_index=0, flip_horizontal=False, flip_vertical=False):
@@ -21,6 +22,7 @@ class CameraManager:
             self.cap = cv2.VideoCapture(self.camera_index, cv2.CAP_DSHOW)
             if not self.cap.isOpened():
                 raise Exception(f"Impossible d'ouvrir la caméra avec l'index {self.camera_index}.")
+            # Définir la résolution de la caméra
             self.running = True
             self.thread = threading.Thread(target=self._capture_loop, daemon=True)
             self.thread.start()
@@ -28,6 +30,7 @@ class CameraManager:
         except Exception as e:
             print(f"Erreur lors du démarrage de la caméra : {e}")
             self.running = False
+            sys.exit(1) # Ajouter pour quitter le programme en cas d'erreur connexion caméra
 
     def _capture_loop(self):
         """Boucle de capture vidéo."""
@@ -64,7 +67,7 @@ class CameraManager:
         print("Caméra arrêtée proprement.")
 
 if __name__ == "__main__":
-    camera_manager = CameraManager(camera_index=0, flip_horizontal=False, flip_vertical=True)
+    camera_manager = CameraManager(camera_index=1, flip_horizontal=False, flip_vertical=True)
     camera_manager.start_camera()
     try:
         while True:

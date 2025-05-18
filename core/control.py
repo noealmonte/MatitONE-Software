@@ -1,6 +1,9 @@
 import time
 import threading
 import pyautogui  # Pour bouger la souris
+import pynput  # Pour lire les entrées clavier
+from pynput.mouse import Button
+
 
 from tracking import TrackingManager # with control.py
 # from core.tracking import TrackingManager  # with main.py
@@ -8,13 +11,18 @@ from tracking import TrackingManager # with control.py
 from calibration import CalibrationManager  # with control.py
 # from core.calibration import CalibrationManager  # with main.py
 
+from pen_logic import PenLogic  # with control.py
+# from core.pen_logic import PenLogic  # with main.py
+
 class Control:
     def __init__(self):
         self.tracking = None
         self.calibration = None
+        self.pen_logic = None  # <- Ajoute ça pour le stylo
         self.running = False
-        self.smooth_pos = None  # Position lissée pour le mouvement de la souris
-       
+        self.smooth_pos = None
+        self.mouse = pynput.mouse.Controller()
+
     def launch_tracking(self, camera_index=0, color_mode="JAUNE", flip_horizontal=False, flip_vertical=False):
         self.tracking = TrackingManager(camera_index, color_mode, flip_horizontal, flip_vertical)
         self.tracking.start_tracking()
@@ -26,11 +34,11 @@ class Control:
 
     def start_calibration(self, tracking, screen_size):
         self.calibration = CalibrationManager(tracking_manager=tracking, screen_size=screen_size)
-        if self.calibration.is_loaded == True:
+        if self.calibration.is_loaded:
             print("Calibration déjà effectuée.")
         else:
             self.calibration.start_calibration()
-            
+
         if self.calibration.calibrated:
             print("Calibration réussie. Lancement du suivi souris.")
             self.running = True
@@ -39,66 +47,114 @@ class Control:
         else:
             print("Calibration échouée ou annulée.")
 
-    
+
     def _follow_mouse(self):
-        """Bouge la souris selon la position transformée du suivi."""
         screen_width, screen_height = pyautogui.size()
-        # print(f"Résolution de l'écran : {screen_width}x{screen_height}")
+        drawing = False
+
         while self.running:
             pos = self.calibration.get_mouse_position()
+
             if pos:
                 x, y = int(pos[0]), int(pos[1])
-                # Vérifie que les coordonnées sont valides
                 if 0 <= x < screen_width and 0 <= y < screen_height:
-                    pyautogui.moveTo(x, y, duration=0)  # Instantané (plus rapide)
+                    self.mouse.position = (x, y)
+
+                    if not drawing:
+                        print("→ Pressing mouse button")
+                        self.mouse.press(Button.left)
+                        drawing = True
                 else:
-                    print(f"Coordonnées invalides : ({x}, {y})")
-            time.sleep(0.005) # 
+                    if drawing:
+                        print("→ Releasing mouse button (out of bounds)")
+                        self.mouse.release(Button.left)
+                        drawing = False
+            else:
+                if drawing:
+                    print("→ Releasing mouse button (no tracking)")
+                    self.mouse.release(Button.left)
+                    drawing = False
+
+            time.sleep(0.01)
 
 
-    # Suivit avec lissage de la souris
     # def _follow_mouse(self):
     #     screen_width, screen_height = pyautogui.size()
-    #     alpha = 0.2  # Coefficient de lissage (entre 0 et 1)
-        
     #     while self.running:
     #         pos = self.calibration.get_mouse_position()
     #         if pos:
     #             x, y = int(pos[0]), int(pos[1])
     #             if 0 <= x < screen_width and 0 <= y < screen_height:
-    #                 if self.smooth_pos is None:
-    #                     self.smooth_pos = (x, y)
-    #                 else:
-    #                     old_x, old_y = self.smooth_pos
-    #                     new_x = int(old_x + alpha * (x - old_x))
-    #                     new_y = int(old_y + alpha * (y - old_y))
-    #                     self.smooth_pos = (new_x, new_y)
+    #                 # pyautogui.moveTo(x, y, duration=0)
+    #                 self.mouse.position = (x, y)
+    #                 #pyautogui.click()
+    #                 self.mouse.press(Button.left)
+    #                 time.sleep(0.1)  # Maintient le clic pendant 0.1 seconde
+    #                 self.mouse.release(Button.left)
+                    
 
-    #                 pyautogui.moveTo(self.smooth_pos[0], self.smooth_pos[1], duration=0)
-    #         # time.sleep(0.005)
+    #             else:
+    #                 print(f"Coordonnées invalides : ({x}, {y})")
+    #         #time.sleep(0.005)
+
+    # def _follow_mouse(self):
+    #     screen_width, screen_height = pyautogui.size()
+    #     drawing = True  # Suivi de l'état du "clic"
+
+    #     while self.running:
+    #         pos = self.calibration.get_mouse_position()
+    #         if pos:
+    #             x, y = int(pos[0]), int(pos[1])
+    #             if 0 <= x < screen_width and 0 <= y < screen_height:
+    #                 self.mouse.position = (x, y)
+
+    #                 if not drawing:
+    #                     self.mouse.press(Button.left)
+    #                     drawing = True
+
+    #             else:
+    #                 print(f"Coordonnées invalides : ({x}, {y})")
+    #                 if drawing:
+    #                     self.mouse.release(Button.left)
+    #                     drawing = False
+    #         else:
+    #             if drawing:
+    #                 self.mouse.release(Button.left)
+    #                 drawing = False
+
+    #         time.sleep(0.005)  # Évite d'inonder le système d'événements
+
+    def connect_to_pen(self):
+        print("Connexion au stylo...")
+        self.pen_logic = PenLogic()
+        self.pen_logic.start()  # Démarre la connexion et le thread de détection
 
     def stop_control(self):
         self.running = False
         if self.tracking:
             self.tracking.stop_tracking()
             self.tracking.stop_debug_display()
+
+        if self.pen_logic:
+            self.pen_logic.stop()  # Très important d'arrêter proprement
+            print("Stylo arrêté.")
+
         print("Fin du programme")
 
-    def connect_to_pen(self):
-        # Logique de connexion au stylo
-        print("Connexion au stylo...")
-        # self.pen = PenManager()
-        # self.pen.connect()
-
-
 if __name__ == "__main__":
+    
     control_app = Control()
-    tracking = control_app.launch_tracking(camera_index=1, color_mode="IR", flip_horizontal=False, flip_vertical=True)
+
+    # Lancer tracking + calibration
+    tracking = control_app.launch_tracking(camera_index=1, color_mode="IR", flip_horizontal=True, flip_vertical=True )
     control_app.start_control()
-    control_app.start_calibration(tracking,screen_size = pyautogui.size())
-   
+    control_app.start_calibration(tracking, screen_size=pyautogui.size())
+
+    # Lancer la connexion au stylo BLE
+    control_app.connect_to_pen()
+
     try:
         while True:
-            time.sleep(1) 
+            time.sleep(1)
     except KeyboardInterrupt:
         control_app.stop_control()
