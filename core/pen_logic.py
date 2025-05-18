@@ -1,8 +1,8 @@
 import threading
 import time
-from pen import Pen
+from core.pen import Pen
 import pyautogui  # Assurez-vous d'avoir installé pyautogui
-from softwareDetector import SoftwareDetector  # <- On importe ton détecteur
+from core.softwareDetector import SoftwareDetector  # <- On importe ton détecteur
 
 class PenLogic:
     """Gère la logique du stylo en fonction des événements reçus et du logiciel utilisé."""

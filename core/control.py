@@ -5,14 +5,14 @@ import pynput  # Pour lire les entrées clavier
 from pynput.mouse import Button
 
 
-from tracking import TrackingManager # with control.py
-# from core.tracking import TrackingManager  # with main.py
+# from tracking import TrackingManager # with control.py
+from core.tracking import TrackingManager  # with main.py
 
-from calibration import CalibrationManager  # with control.py
-# from core.calibration import CalibrationManager  # with main.py
+# from calibration import CalibrationManager  # with control.py
+from core.calibration import CalibrationManager  # with main.py
 
-from pen_logic import PenLogic  # with control.py
-# from core.pen_logic import PenLogic  # with main.py
+# from pen_logic import PenLogic  # with control.py
+from core.pen_logic import PenLogic  # with main.py
 
 class Control:
     def __init__(self):
@@ -144,7 +144,7 @@ class Control:
 if __name__ == "__main__":
     
     control_app = Control()
-
+    
     # Lancer tracking + calibration
     tracking = control_app.launch_tracking(camera_index=1, color_mode="IR", flip_horizontal=True, flip_vertical=True )
     control_app.start_control()

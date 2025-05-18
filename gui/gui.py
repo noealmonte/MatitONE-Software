@@ -55,7 +55,7 @@ class MainGUI:
         """Alterner entre Start et Stop."""
         if self.is_running:
             # Appel de stop_calibration() et mise à jour de l'interface
-            print("Sstop_control...")
+            print("Stop_control...")
             if hasattr(self.control_app, "stop_control"):
                 self.control_app.stop_control()
             else:
