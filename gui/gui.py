@@ -1,5 +1,6 @@
 import customtkinter as ctk
 from typing import Any
+import threading
 
 class MainGUI:
     """Main GUI application class built with CustomTkinter."""
@@ -7,6 +8,7 @@ class MainGUI:
     def __init__(self, control_app, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.control_app = control_app  # Logic class instance (Control)
+        self.tracking = control_app.launch_tracking(camera_index=1, color_mode="IR", flip_horizontal=True, flip_vertical=True )
         self.root = ctk.CTk()
         self.root.title("MatitONE Software")
         self.root.geometry("800x600")
@@ -65,15 +67,17 @@ class MainGUI:
         else:
             # Appel de start_control() et mise à jour de l'interface
             print("Starting control...")
-            self.control_app.start_control()
-
+            # Lancer la calibration dans un thread séparé
+            threading.Thread(target=self._start_control_and_calibration, daemon=True).start()
             self.startbutton.configure(text="Stop")
 
         # Inversion de l'état
         self.is_running = not self.is_running
 
-
-
+    def _start_control_and_calibration(self):
+        self.control_app.start_control()
+        # Ici, tu peux passer screen_size si besoin
+        self.control_app.start_calibration(self.tracking)
 
     def run(self) -> None:
         """Start the main application loop."""

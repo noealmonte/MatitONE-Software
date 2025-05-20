@@ -5,14 +5,15 @@ import pynput  # Pour lire les entrées clavier
 from pynput.mouse import Button
 
 
-# from tracking import TrackingManager # with control.py
-from core.tracking import TrackingManager  # with main.py
+from tracking import TrackingManager # with control.py
+# from core.tracking import TrackingManager  # with main.py
 
-# from calibration import CalibrationManager  # with control.py
-from core.calibration import CalibrationManager  # with main.py
+# from calibration_copy_2 import CalibrationManager  # with control.py
+from calibration import CalibrationManager  # with control.py
+# from core.calibration import CalibrationManager  # with main.py
 
-# from pen_logic import PenLogic  # with control.py
-from core.pen_logic import PenLogic  # with main.py
+from pen_logic import PenLogic  # with control.py
+# from core.pen_logic import PenLogic  # with main.py
 
 class Control:
     def __init__(self):
@@ -32,7 +33,7 @@ class Control:
         print("Démarrage du contrôle...")
         return self.tracking
 
-    def start_calibration(self, tracking, screen_size):
+    def start_calibration(self, tracking, screen_size=pyautogui.size()):
         self.calibration = CalibrationManager(tracking_manager=tracking, screen_size=screen_size)
         if self.calibration.is_loaded:
             print("Calibration déjà effectuée.")
@@ -144,9 +145,9 @@ class Control:
 if __name__ == "__main__":
     
     control_app = Control()
-    
+
     # Lancer tracking + calibration
-    tracking = control_app.launch_tracking(camera_index=1, color_mode="IR", flip_horizontal=True, flip_vertical=True )
+    tracking = control_app.launch_tracking(camera_index=0, color_mode="JAUNE", flip_horizontal=True, flip_vertical=False )
     control_app.start_control()
     control_app.start_calibration(tracking, screen_size=pyautogui.size())
 

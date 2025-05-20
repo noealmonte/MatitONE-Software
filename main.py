@@ -1,12 +1,15 @@
-from core.control import Control
+import time
+from core.control import Control 
 from gui.gui import MainGUI
+import threading
 
 def main():
-    """Démarre l'application principale."""
+    # Logique principale
     print("Démarrage de l'application...")
-    control_app = Control()  # Instance de contrôle
-    gui_app = MainGUI(control_app)  # Passage de l'instance à la GUI
-    gui_app.run()
+    # Création des instances de GUI et de Control
+    control_app = Control()
+    guiapp = MainGUI(control_app)     
+    guiapp.run()
 
 if __name__ == "__main__":
     main()

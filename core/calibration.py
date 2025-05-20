@@ -4,8 +4,8 @@ import numpy as np
 import threading
 import os
 
-# from tracking import TrackingManager  # with control.py
-from core.tracking import TrackingManager  # with main.py
+from tracking import TrackingManager  # with control.py
+# from core.tracking import TrackingManager  # with main.py
 
 class CalibrationManager:
     def __init__(self, tracking_manager, screen_size=(3840, 2400)):
