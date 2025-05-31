@@ -15,6 +15,7 @@ from calibration import CalibrationManager  # with control.py
 from pen_logic import PenLogic  # with control.py
 # from core.pen_logic import PenLogic  # with main.py
 
+
 class Control:
     def __init__(self):
         self.tracking = None
@@ -75,8 +76,8 @@ class Control:
                     print("→ Releasing mouse button (no tracking)")
                     self.mouse.release(Button.left)
                     drawing = False
-
-            time.sleep(0.01)
+                    
+            time.sleep(0.001)
 
 
     # def _follow_mouse(self):
@@ -158,4 +159,6 @@ if __name__ == "__main__":
         while True:
             time.sleep(1)
     except KeyboardInterrupt:
-        control_app.stop_control()
+        control_app.stop_control()  
+
+        

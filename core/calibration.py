@@ -35,11 +35,68 @@ class CalibrationManager:
         if event == cv2.EVENT_LBUTTONDOWN:
             self.mouse_clicked = True
 
+    # def start_calibration(self):
+    #     print("Calibration en cours... Suivez les instructions.")
+    #     self.tracking_manager.start_tracking()
+    #     self.mouse_clicked = False
+    #     idx = 0
+
+    #     while idx < len(self.screen_points):
+    #         frame = self.tracking_manager.camera_manager.get_frame()
+    #         pos = self.tracking_manager.get_position()
+
+    #         if frame is not None:
+    #             display = frame.copy()
+    #             h, w, _ = frame.shape
+    #             # print("h et w",h, w)
+
+    #             # Affichage des points cibles
+    #             for i, pt in enumerate(self.screen_points):
+    #                 color = (0, 255, 0) if i == idx else (100, 100, 100)
+    #                 # cv2.circle(display, (int(pt[0] * w / 1920), int(pt[1] * h / 1080)), 10, color, -1)
+    #                 cv2.circle(display, (int(pt[0] * w / self.screen_points[2][0]), int(pt[1] * h / self.screen_points[2][1])), 10, color, -1)
+
+    #             # Affichage de la position détectée
+    #             if pos:
+    #                 x, y, w_rect, h_rect = pos
+    #                 center = (x + w_rect // 2, y + h_rect // 2)
+    #                 cv2.circle(display, center, 5, (0, 0, 255), -1)
+
+    #             cv2.putText(display, f"Point {idx + 1}/4 - Appuyez sur Espace", (10, 30),
+    #                         cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
+
+    #             cv2.imshow("Calibration", display)
+    #             cv2.setMouseCallback("Calibration", self._mouse_callback)
+
+
+    #             key = cv2.waitKey(1) & 0xFF
+    #             if key == 27:  # ESC
+    #                 print("Calibration annulée.")
+    #                 break
+    #             elif (key == 32 or self.mouse_clicked) and pos:
+    #                 center = (pos[0] + pos[2] // 2, pos[1] + pos[3] // 2)
+    #                 self.camera_points.append(center)
+    #                 print(f"Point {idx+1} enregistré à {center}")
+    #                 idx += 1
+    #                 self.mouse_clicked = False
+
+    #     cv2.destroyWindow("Calibration")
+
+    #     if len(self.camera_points) == 4:
+    #         self._compute_homography()
+    #         self._save_homography()
+    #         self.calibrated = True
+    #         print("Calibration réussie.")
+    #     else:
+    #         print("Calibration incomplète.")
+
     def start_calibration(self):
         print("Calibration en cours... Suivez les instructions.")
         self.tracking_manager.start_tracking()
         self.mouse_clicked = False
         idx = 0
+
+        corner_names = ["Haut-Gauche", "Haut-Droit", "Bas-Droit", "Bas-Gauche"]
 
         while idx < len(self.screen_points):
             frame = self.tracking_manager.camera_manager.get_frame()
@@ -47,27 +104,25 @@ class CalibrationManager:
 
             if frame is not None:
                 display = frame.copy()
-                h, w, _ = frame.shape
-                # print("h et w",h, w)
 
-                # Affichage des points cibles
-                for i, pt in enumerate(self.screen_points):
+                # Affichage des coins comme repères visuels (sans correspondance physique)
+                for i, label in enumerate(corner_names):
                     color = (0, 255, 0) if i == idx else (100, 100, 100)
-                    # cv2.circle(display, (int(pt[0] * w / 1920), int(pt[1] * h / 1080)), 10, color, -1)
-                    cv2.circle(display, (int(pt[0] * w / self.screen_points[2][0]), int(pt[1] * h / self.screen_points[2][1])), 10, color, -1)
+                    cv2.putText(display, label, (50, 60 + i*30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, color, 2)
 
-                # Affichage de la position détectée
+                # Affichage de la position détectée (balle/objet tracké)
                 if pos:
                     x, y, w_rect, h_rect = pos
                     center = (x + w_rect // 2, y + h_rect // 2)
-                    cv2.circle(display, center, 5, (0, 0, 255), -1)
+                    cv2.circle(display, center, 8, (0, 0, 255), -1)
 
-                cv2.putText(display, f"Point {idx + 1}/4 - Appuyez sur Espace", (10, 30),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
+                cv2.putText(display, f"Calibration du coin: {corner_names[idx]}", (10, 30),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
+                cv2.putText(display, "Appuyez sur Espace ou cliquez pour valider", (10, display.shape[0] - 20),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.6, (200, 200, 200), 1)
 
                 cv2.imshow("Calibration", display)
                 cv2.setMouseCallback("Calibration", self._mouse_callback)
-
 
                 key = cv2.waitKey(1) & 0xFF
                 if key == 27:  # ESC
@@ -76,7 +131,7 @@ class CalibrationManager:
                 elif (key == 32 or self.mouse_clicked) and pos:
                     center = (pos[0] + pos[2] // 2, pos[1] + pos[3] // 2)
                     self.camera_points.append(center)
-                    print(f"Point {idx+1} enregistré à {center}")
+                    print(f"Point '{corner_names[idx]}' enregistré à {center}")
                     idx += 1
                     self.mouse_clicked = False
 
@@ -89,6 +144,7 @@ class CalibrationManager:
             print("Calibration réussie.")
         else:
             print("Calibration incomplète.")
+
 
     def _compute_homography(self):
         camera_pts = np.array(self.camera_points, dtype=np.float32)

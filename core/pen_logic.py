@@ -53,9 +53,9 @@ class PenLogic:
             self.handle_switch2()
         elif message == "S3":
             self.handle_switch3()
-        elif message == "Sensor_Write_front": #START_WRITE
+        elif message == "AV2UP": #START_WRITE
             self.handle_sensor_write_front()
-        elif message == "Sensor_Release_front": #STOP_WRITE
+        elif message == "AV2DOWN": #STOP_WRITE
             self.handle_sensor_release_front()
         # Ajoute ici d'autres cas si besoin
 
@@ -110,7 +110,7 @@ class PenLogic:
         """Action pour le capteur d'écriture."""
         if self.current_software == "whiteboard":
              if not self.mouse_is_down:
-                pyautogui.mouseDown()# Simule le clic gauche de la souris
+                pyautogui.mouseDown()# Simule le clic gauche de la souris # CHANGER 
                 self.mouse_is_down = True
                 print("🖱️ Mouse DOWN (début écriture)")
         elif self.current_software == "onenote":
@@ -131,6 +131,9 @@ class PenLogic:
             print("📝 Écriture détectée sur OneNote")
         else:
             print("🔄 Écriture détectée (aucun logiciel spécifique)")
+
+
+
 
 if __name__ == "__main__":
     logic = PenLogic()
