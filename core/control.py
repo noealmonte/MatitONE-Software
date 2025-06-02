@@ -4,15 +4,14 @@ import pyautogui  # Pour bouger la souris
 import pynput  # Pour lire les entrées clavier
 from pynput.mouse import Button
 
-
-from tracking import TrackingManager # with control.py
+from .tracking import TrackingManager  # with control.py
 # from core.tracking import TrackingManager  # with main.py
 
 # from calibration_copy_2 import CalibrationManager  # with control.py
-from calibration import CalibrationManager  # with control.py
+from .calibration import CalibrationManager  # with control.py
 # from core.calibration import CalibrationManager  # with main.py
 
-from pen_logic import PenLogic  # with control.py
+from .pen_logic import PenLogic  # with control.py
 # from core.pen_logic import PenLogic  # with main.py
 
 
@@ -26,7 +25,8 @@ class Control:
         self.mouse = pynput.mouse.Controller()
 
     def launch_tracking(self, camera_index=0, color_mode="JAUNE", flip_horizontal=False, flip_vertical=False):
-        self.tracking = TrackingManager(camera_index, color_mode, flip_horizontal, flip_vertical)
+        self.tracking = TrackingManager(
+            camera_index, color_mode, flip_horizontal, flip_vertical)
         self.tracking.start_tracking()
         return self.tracking
 
@@ -35,7 +35,9 @@ class Control:
         return self.tracking
 
     def start_calibration(self, tracking, screen_size=pyautogui.size()):
-        self.calibration = CalibrationManager(tracking_manager=tracking, screen_size=screen_size)
+        if self.calibration is None:
+            self.calibration = CalibrationManager(
+                tracking_manager=tracking, screen_size=screen_size)
         if self.calibration.is_loaded:
             print("Calibration déjà effectuée.")
         else:
@@ -44,11 +46,17 @@ class Control:
         if self.calibration.calibrated:
             print("Calibration réussie. Lancement du suivi souris.")
             self.running = True
-            mouse_thread = threading.Thread(target=self._follow_mouse, daemon=True)
+            mouse_thread = threading.Thread(
+                target=self._follow_mouse, daemon=True)
             mouse_thread.start()
         else:
             print("Calibration échouée ou annulée.")
 
+    def delete_calibration(self):
+        if self.calibration is None:
+            print("No Calibration was found")
+            return
+        self.calibration.is_loaded = False
 
     def _follow_mouse(self):
         screen_width, screen_height = pyautogui.size()
@@ -76,9 +84,8 @@ class Control:
                     print("→ Releasing mouse button (no tracking)")
                     self.mouse.release(Button.left)
                     drawing = False
-                    
-            time.sleep(0.001)
 
+            time.sleep(0.001)
 
     # def _follow_mouse(self):
     #     screen_width, screen_height = pyautogui.size()
@@ -93,7 +100,6 @@ class Control:
     #                 self.mouse.press(Button.left)
     #                 time.sleep(0.1)  # Maintient le clic pendant 0.1 seconde
     #                 self.mouse.release(Button.left)
-                    
 
     #             else:
     #                 print(f"Coordonnées invalides : ({x}, {y})")
@@ -135,7 +141,7 @@ class Control:
         self.running = False
         if self.tracking:
             self.tracking.stop_tracking()
-            self.tracking.stop_debug_display()
+            # self.tracking.stop_debug_display()
 
         if self.pen_logic:
             self.pen_logic.stop()  # Très important d'arrêter proprement
@@ -143,12 +149,14 @@ class Control:
 
         print("Fin du programme")
 
+
 if __name__ == "__main__":
-    
+
     control_app = Control()
 
     # Lancer tracking + calibration
-    tracking = control_app.launch_tracking(camera_index=0, color_mode="JAUNE", flip_horizontal=True, flip_vertical=False )
+    tracking = control_app.launch_tracking(
+        camera_index=0, color_mode="JAUNE", flip_horizontal=True, flip_vertical=False)
     control_app.start_control()
     control_app.start_calibration(tracking, screen_size=pyautogui.size())
 
@@ -159,6 +167,4 @@ if __name__ == "__main__":
         while True:
             time.sleep(1)
     except KeyboardInterrupt:
-        control_app.stop_control()  
-
-        
+        control_app.stop_control()
