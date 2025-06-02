@@ -2,13 +2,17 @@ import customtkinter as ctk
 from typing import Any
 import threading
 
+from core import calibration, control
+from core.control import Control
+
+
 class MainGUI:
     """Main GUI application class built with CustomTkinter."""
 
     def __init__(self, control_app, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.control_app = control_app  # Logic class instance (Control)
-        self.tracking = control_app.launch_tracking(camera_index=1, color_mode="IR", flip_horizontal=True, flip_vertical=True )
+        # Logic class instance (Control)
+        self.control_app: Control = control_app
         self.root = ctk.CTk()
         self.root.title("MatitONE Software")
         self.root.geometry("800x600")
@@ -38,7 +42,7 @@ class MainGUI:
         )
         self.title_label.pack(pady=20)
 
-        #------ Bouton Start/Stop control  ------
+        # ------ Bouton Start/Stop control  ------
         self.startbutton = ctk.CTkButton(
             self.main_frame,
             text="Start",
@@ -46,13 +50,93 @@ class MainGUI:
         )
         self.startbutton.pack(pady=10)
 
+        self.delete_profile_button = ctk.CTkButton(
+            self.main_frame,
+            text="Delete Calibration",
+            command=self._handle_delete_calibration_action,  # Use a wrapper
+        )
+        # ------ Bouton Pen connection control  ------
+        if not self._connection_status:
+            self.connect_button = ctk.CTkButton(
+                self.main_frame,
+                text="Connect Pen",
+                command=self._connect_pen,
+            )
+            self.connect_button.pack(pady=10)
+
         self.status_label = ctk.CTkLabel(
             self.main_frame,
-            text=f"Mode: {self._current_mode} | Connected: {self._connection_status}"
+            text=f"Mode: {self._current_mode} | Connected: {
+                self._is_connected()}"
         )
         self.status_label.pack(pady=20)
 
-    #------ Bouton Start/Stop control function  ------
+        self._update_ui_state()
+
+    def _update_ui_state(self):
+        self._update_delete_button_visibility()
+
+    def _update_delete_button_visibility(self):
+        """Shows or hides the 'Delete Calibration' button."""
+        if not hasattr(self, 'delete_profile_button'):  # Ensure button exists
+            return
+
+        profile_loaded = self.control_app.calibration.is_loaded
+
+        if profile_loaded:
+            if not self.delete_profile_button.winfo_ismapped():  # Check if not already packed
+                self.delete_profile_button.pack(
+                    pady=10, after=self.startbutton)
+            self.delete_profile_button.configure(state="normal")
+        else:
+            if self.delete_profile_button.winfo_ismapped():  # Check if currently packed
+                self.delete_profile_button.pack_forget()
+            # No need to set state if it's not visible, but doesn't hurt
+            # self.delete_profile_button.configure(state="disabled")
+
+    def _handle_delete_calibration_action(self):
+        """Wrapper for the delete calibration button command."""
+        self.control_app.delete_calibration()
+
+        # ALWAYS update the button visibility after the action
+        self._update_delete_button_visibility()
+
+    def _connect_pen(self):
+        self.control_app.connect_to_pen()
+        self.status_label.configure(
+            text=f"Mode: {self._current_mode} | Connected: {
+                self._is_connected()}"
+        )
+
+    def _is_connected(self):
+        try:
+            # Check if self.control_app.pen_logic is valid
+            if not (
+                hasattr(self.control_app, "pen_logic")
+                and self.control_app.pen_logic is not None
+            ):
+                return "N/A"
+
+            # Check if self.control_app.pen_logic.pen.client is valid
+            # This implies pen_logic.pen must also exist and not be None.
+            if not (
+                hasattr(self.control_app.pen_logic, "pen")
+                and self.control_app.pen_logic.pen is not None
+                and hasattr(self.control_app.pen_logic.pen, "client")
+                and self.control_app.pen_logic.pen.client is not None
+            ):
+                return "N/A"
+
+            # If both conditions met, access 'connected' attribute
+            client = self.control_app.pen_logic.pen.client
+            if hasattr(client, "connected"):
+                return str(client.connected)
+            else:
+                return "Attr Missing"  # 'connected' attribute not on client
+        except Exception:
+            # print(f"Error getting connection status: {e}") # For debugging
+            return "Error"
+
     def toggle_start_stop(self):
         """Alterner entre Start et Stop."""
         if self.is_running:
@@ -68,25 +152,26 @@ class MainGUI:
             # Appel de start_control() et mise à jour de l'interface
             print("Starting control...")
             # Lancer la calibration dans un thread séparé
-            threading.Thread(target=self._start_control_and_calibration, daemon=True).start()
+            threading.Thread(
+                target=self._start_control_and_calibration, daemon=True).start()
             self.startbutton.configure(text="Stop")
 
         # Inversion de l'état
         self.is_running = not self.is_running
+        self._update_ui_state()
 
     def _start_control_and_calibration(self):
-        self.control_app.start_control()
         # Ici, tu peux passer screen_size si besoin
-        self.control_app.start_calibration(self.tracking)
+        self.control_app.start_calibration()
 
     def run(self) -> None:
         """Start the main application loop."""
         self.root.mainloop()
 
+
 if __name__ == "__main__":
     app = MainGUI()
     app.run()
-
 
 
 # # Exemple de classe de contrôle
@@ -104,18 +189,12 @@ if __name__ == "__main__":
 #     app.run()
 
 
-
-
-
-
-
-
 # import customtkinter as ctk
 # from typing import Any, Optional
 
 # class MainGUI:
 #     """Main GUI application class built with CustomTkinter."""
-    
+
 #     def __init__(self, control_app, *args, **kwargs):
 #         super().__init__(*args, **kwargs)
 #         self.control_app = control_app  # Logic class instance (Control)
@@ -123,33 +202,33 @@ if __name__ == "__main__":
 #         self.root = ctk.CTk()
 #         self.root.title("MatitONE Software")
 #         self.root.geometry("800x600")
-        
+
 #         # Theme settings
 #         ctk.set_appearance_mode("System")  # Modes: "System", "Dark", "Light"
 #         ctk.set_default_color_theme("blue")  # Themes: "blue", "green", "dark-blue"
-        
+
 #         # Private attributes for demonstration of getters and setters
 #         self._current_mode = "Normal"
 #         self._user_settings = {}
 #         self._connection_status = False
-        
+
 #         # Initialize UI components
 #         self._init_ui()
-    
+
 #     def _init_ui(self):
 #         """Initialize all UI components."""
 #         # Create a frame for the main content
 #         self.main_frame = ctk.CTkFrame(self.root)
 #         self.main_frame.pack(fill="both", expand=True, padx=10, pady=10)
-        
+
 #         # Add a sample label
 #         self.title_label = ctk.CTkLabel(
-#             self.main_frame, 
-#             text="MatitONE Software", 
+#             self.main_frame,
+#             text="MatitONE Software",
 #             font=("Arial", 24)
 #         )
 #         self.title_label.pack(pady=20)
-        
+
 #         # Add a sample button
 #         self.startbutton = ctk.CTkButton(
 #             self.main_frame,
@@ -157,67 +236,64 @@ if __name__ == "__main__":
 #             command=self.startbutton_function,
 #         )
 #         self.startbutton.pack(pady=10)
-        
+
 #         # Status label to demonstrate property changes
 #         self.status_label = ctk.CTkLabel(
 #             self.main_frame,
 #             text=f"Mode: {self._current_mode} | Connected: {self._connection_status}"
 #         )
 #         self.status_label.pack(pady=20)
-    
+
 #     def startbutton_function(self):
 #         """Example method for button command."""
 #         print("start button pressed")
 #         self.control_app.start_control()  # Call the control app method
 #         # Toggle connection status when button is pressed
 #         self.connection_status = not self.connection_status
-    
-
-
 
 
 #     # Example getters and setters using properties
-    
+
 #     @property
 #     def current_mode(self) -> str:
 #         """Get the current application mode."""
 #         return self._current_mode
-    
+
 #     @current_mode.setter
 #     def current_mode(self, value: str) -> None:
 #         """Set the current application mode."""
 #         self._current_mode = value
 #         # Update UI when mode changes
 #         self.update_status_display()
-    
+
 #     @property
 #     def user_settings(self) -> dict:
 #         """Get user settings dictionary."""
 #         return self._user_settings.copy()  # Return a copy to prevent direct modification
-    
+
 #     def update_user_setting(self, key: str, value: Any) -> None:
 #         """Set a specific user setting."""
 #         self._user_settings[key] = value
 #         print(f"Updated setting: {key} = {value}")
-    
+
 #     @property
 #     def connection_status(self) -> bool:
 #         """Get the connection status."""
 #         return self._connection_status
-    
+
 #     @connection_status.setter
 #     def connection_status(self, status: bool) -> None:
 #         """Set the connection status."""
 #         self._connection_status = status
 #         # Update UI when status changes
 #         self.update_status_display()
-    
+
 #     def update_status_display(self) -> None:
 #         """Update the status display in the UI."""
 #         self.status_label.configure(
 #             text=f"Mode: {self._current_mode} | Connected: {self._connection_status}"
 #         )
-    
+
 #     def run(self) -> None:
 #         """Start the main application loop."""
 #         self.root.mainloop()
