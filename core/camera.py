@@ -1,6 +1,8 @@
 import cv2
+import platform
 import threading
 import sys  # À ajouter en haut du fichier
+
 
 class CameraManager:
     def __init__(self, camera_index=0, flip_horizontal=False, flip_vertical=False):
@@ -19,18 +21,25 @@ class CameraManager:
             print("La caméra est déjà en cours d'exécution.")
             return
         try:
-            self.cap = cv2.VideoCapture(self.camera_index, cv2.CAP_DSHOW)
+            if platform.system() == "Linux":
+                self.cap = cv2.VideoCapture(self.camera_index, cv2.CAP_ANY)
+            else:
+                self.cap = cv2.VideoCapture(self.camera_index, cv2.CAP_DSHOW)
             if not self.cap.isOpened():
-                raise Exception(f"Impossible d'ouvrir la caméra avec l'index {self.camera_index}.")
+                raise Exception(f"Impossible d'ouvrir la caméra avec l'index {
+                                self.camera_index}.")
+
             # Définir la résolution de la caméra
             self.running = True
-            self.thread = threading.Thread(target=self._capture_loop, daemon=True)
+            self.thread = threading.Thread(
+                target=self._capture_loop, daemon=True)
             self.thread.start()
             print("Caméra démarrée avec succès.")
         except Exception as e:
             print(f"Erreur lors du démarrage de la caméra : {e}")
             self.running = False
-            sys.exit(1) # Ajouter pour quitter le programme en cas d'erreur connexion caméra
+            # Ajouter pour quitter le programme en cas d'erreur connexion caméra
+            sys.exit(1)
 
     def _capture_loop(self):
         """Boucle de capture vidéo."""
@@ -52,8 +61,7 @@ class CameraManager:
 
     def get_frame(self):
         """Retourne la dernière image capturée."""
-        with self.lock:  # Protéger l'accès à la frame
-            return self.frame
+        return self.frame
 
     def stop_camera(self):
         """Arrête la caméra proprement."""
@@ -66,8 +74,10 @@ class CameraManager:
                 self.cap = None
         print("Caméra arrêtée proprement.")
 
+
 if __name__ == "__main__":
-    camera_manager = CameraManager(camera_index=1, flip_horizontal=False, flip_vertical=True)
+    camera_manager = CameraManager(
+        camera_index=1, flip_horizontal=False, flip_vertical=True)
     camera_manager.start_camera()
     try:
         while True:

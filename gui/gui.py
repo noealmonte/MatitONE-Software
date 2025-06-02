@@ -11,8 +11,6 @@ class MainGUI:
         super().__init__(*args, **kwargs)
         # Logic class instance (Control)
         self.control_app: Control = control_app
-        self.tracking = control_app.launch_tracking(
-            camera_index=0, color_mode="ORANGE", flip_horizontal=False, flip_vertical=True)
         self.root = ctk.CTk()
         self.root.title("MatitONE Software")
         self.root.geometry("800x600")
@@ -132,9 +130,8 @@ class MainGUI:
         self.is_running = not self.is_running
 
     def _start_control_and_calibration(self):
-        self.control_app.start_control()
         # Ici, tu peux passer screen_size si besoin
-        self.control_app.start_calibration(self.tracking)
+        self.control_app.start_calibration()
 
     def run(self) -> None:
         """Start the main application loop."""

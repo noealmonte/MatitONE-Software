@@ -1,23 +1,22 @@
-#VERSION FONCTIONNELLE SANS PROJECTION SUR L'ECRAN, A GARDER
+# VERSION FONCTIONNELLE SANS PROJECTION SUR L'ECRAN, A GARDER
 import cv2
 import numpy as np
 import threading
 import os
 
-from tracking import TrackingManager  # with control.py
+import pyautogui
+
+from .tracking import TrackingManager  # with control.py
 # from core.tracking import TrackingManager  # with main.py
+
 
 class CalibrationManager:
     def __init__(self, tracking_manager, screen_size=(3840, 2400)):
         self.tracking_manager = tracking_manager
-        delta = 10 # zone de détection en pixels
-        self.screen_points = [
-            (0+delta, 0+delta),
-            (screen_size[0]-delta, 0+delta),
-            (screen_size[0]-delta, screen_size[1]-delta),
-            (0+delta, screen_size[1]-delta)
-        ]
-      
+        self.delta = 10  # zone de détection en pixels
+        self.size = screen_size
+        self.set_screen_size(screen_size)
+
         self.camera_points = []
         self.homography = None
         self.calibrated = False
@@ -26,7 +25,18 @@ class CalibrationManager:
         # Charger l'homographie existante si elle existe
         self._ensure_data_folder()
         self.is_loaded = self.load_homography()
-        
+
+    def set_screen_size(self, size):
+        self.size = size
+        self.screen_points = [
+            (0+self.delta, 0+self.delta),
+            (self.size[0]-self.delta, 0+self.delta),
+            (self.size[0]-self.delta, self.size[1]-self.delta),
+            (0+self.delta, self.size[1]-self.delta)
+        ]
+
+    def update_screen_size_automatically(self):
+        self.set_screen_size(pyautogui.size())
 
     def _ensure_data_folder(self):
         os.makedirs(os.path.dirname(self.calibration_path), exist_ok=True)
@@ -68,7 +78,6 @@ class CalibrationManager:
     #             cv2.imshow("Calibration", display)
     #             cv2.setMouseCallback("Calibration", self._mouse_callback)
 
-
     #             key = cv2.waitKey(1) & 0xFF
     #             if key == 27:  # ESC
     #                 print("Calibration annulée.")
@@ -103,25 +112,25 @@ class CalibrationManager:
             pos = self.tracking_manager.get_position()
 
             if frame is not None:
-                display = frame.copy()
 
                 # Affichage des coins comme repères visuels (sans correspondance physique)
                 for i, label in enumerate(corner_names):
                     color = (0, 255, 0) if i == idx else (100, 100, 100)
-                    cv2.putText(display, label, (50, 60 + i*30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, color, 2)
+                    cv2.putText(frame, label, (50, 60 + i*30),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.7, color, 2)
 
                 # Affichage de la position détectée (balle/objet tracké)
                 if pos:
                     x, y, w_rect, h_rect = pos
                     center = (x + w_rect // 2, y + h_rect // 2)
-                    cv2.circle(display, center, 8, (0, 0, 255), -1)
+                    cv2.circle(frame, center, 8, (0, 0, 255), -1)
 
-                cv2.putText(display, f"Calibration du coin: {corner_names[idx]}", (10, 30),
+                cv2.putText(frame, f"Calibration du coin: {corner_names[idx]}", (10, 30),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
-                cv2.putText(display, "Appuyez sur Espace ou cliquez pour valider", (10, display.shape[0] - 20),
+                cv2.putText(frame, "Appuyez sur Espace ou cliquez pour valider", (10, frame.shape[0] - 20),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.6, (200, 200, 200), 1)
 
-                cv2.imshow("Calibration", display)
+                cv2.imshow("Calibration", frame)
                 cv2.setMouseCallback("Calibration", self._mouse_callback)
 
                 key = cv2.waitKey(1) & 0xFF
@@ -144,7 +153,6 @@ class CalibrationManager:
             print("Calibration réussie.")
         else:
             print("Calibration incomplète.")
-
 
     def _compute_homography(self):
         camera_pts = np.array(self.camera_points, dtype=np.float32)
@@ -188,28 +196,27 @@ class CalibrationManager:
         #     cv2.imshow("Debug Tracking", display_frame)
         # #---------------------------------
 
-
-        center = np.array([[pos[0] + pos[2] // 2, pos[1] + pos[3] // 2]], dtype=np.float32)
+        center = np.array(
+            [[pos[0] + pos[2] // 2, pos[1] + pos[3] // 2]], dtype=np.float32)
         center = np.array([center])
         transformed = cv2.perspectiveTransform(center, self.homography)
         return tuple(transformed[0][0])
-    
-    
+
 
 # Exemple d'utilisation en dehors
 if __name__ == "__main__":
-    tracker = TrackingManager(camera_index=0, color_mode="JAUNE", flip_horizontal=True, flip_vertical=False)
+    tracker = TrackingManager(
+        camera_index=0, color_mode="JAUNE", flip_horizontal=True, flip_vertical=False)
     calibration = CalibrationManager(tracker)
 
     if not calibration.calibrated:
         calibration.start_calibration()
 
     while calibration.calibrated:
-        pos = calibration.get_mouse_position()   
+        pos = calibration.get_mouse_position()
         if pos:
             print("Position souris :", pos)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
     tracker.stop_tracking()
-    

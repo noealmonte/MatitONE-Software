@@ -16,28 +16,24 @@ from .pen_logic import PenLogic  # with control.py
 
 
 class Control:
-    def __init__(self):
-        self.tracking = None
-        self.calibration = None
+    def __init__(self, tracking_manager: TrackingManager):
+        self.tracking = tracking_manager
+        self.calibration = CalibrationManager(
+            tracking_manager=self.tracking, screen_size=pyautogui.size())
         self.pen_logic = None  # <- Ajoute ça pour le stylo
         self.running = False
         self.smooth_pos = None
         self.mouse = pynput.mouse.Controller()
 
-    def launch_tracking(self, camera_index=0, color_mode="JAUNE", flip_horizontal=False, flip_vertical=False):
-        self.tracking = TrackingManager(
-            camera_index, color_mode, flip_horizontal, flip_vertical)
+    def launch_tracking(self):
         self.tracking.start_tracking()
-        return self.tracking
 
-    def start_control(self):
-        print("Démarrage du contrôle...")
-        return self.tracking
-
-    def start_calibration(self, tracking, screen_size=pyautogui.size()):
+    def start_calibration(self, screen_size=pyautogui.size()):
         if self.calibration is None:
             self.calibration = CalibrationManager(
-                tracking_manager=tracking, screen_size=screen_size)
+                tracking_manager=tracking, screen_size=pyautogui.size())
+        else:
+            self.calibration.set_screen_size(screen_size)
         if self.calibration.is_loaded:
             print("Calibration déjà effectuée.")
         else:
