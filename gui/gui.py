@@ -55,6 +55,7 @@ class MainGUI:
             text="Delete Calibration",
             command=self._handle_delete_calibration_action,  # Use a wrapper
         )
+        self.delete_profile_button.pack(pady=10)
         # ------ Bouton Pen connection control  ------
         if not self._connection_status:
             self.connect_button = ctk.CTkButton(
@@ -71,35 +72,10 @@ class MainGUI:
         )
         self.status_label.pack(pady=20)
 
-        self._update_ui_state()
-
-    def _update_ui_state(self):
-        self._update_delete_button_visibility()
-
-    def _update_delete_button_visibility(self):
-        """Shows or hides the 'Delete Calibration' button."""
-        if not hasattr(self, 'delete_profile_button'):  # Ensure button exists
-            return
-
-        profile_loaded = self.control_app.calibration.is_loaded
-
-        if profile_loaded:
-            if not self.delete_profile_button.winfo_ismapped():  # Check if not already packed
-                self.delete_profile_button.pack(
-                    pady=10, after=self.startbutton)
-            self.delete_profile_button.configure(state="normal")
-        else:
-            if self.delete_profile_button.winfo_ismapped():  # Check if currently packed
-                self.delete_profile_button.pack_forget()
-            # No need to set state if it's not visible, but doesn't hurt
-            # self.delete_profile_button.configure(state="disabled")
-
+     
     def _handle_delete_calibration_action(self):
         """Wrapper for the delete calibration button command."""
         self.control_app.delete_calibration()
-
-        # ALWAYS update the button visibility after the action
-        self._update_delete_button_visibility()
 
     def _connect_pen(self):
         self.control_app.connect_to_pen()
@@ -158,7 +134,6 @@ class MainGUI:
 
         # Inversion de l'état
         self.is_running = not self.is_running
-        self._update_ui_state()
 
     def _start_control_and_calibration(self):
         # Ici, tu peux passer screen_size si besoin

@@ -55,32 +55,39 @@ class Control:
         if self.calibration.is_loaded:
             print("Previous Calibration was deleted")
             self.calibration.is_loaded = False
+        else:
+            print("No Calibration was found to delete")
 
     def _follow_mouse(self):
         screen_width, screen_height = pyautogui.size()
         drawing = False
-
+        print("iCI follow mouse")
+        
         while self.running:
             pos = self.calibration.get_mouse_position()
-
+            # print("Position du stylo :", pos)
             if pos:
                 x, y = int(pos[0]), int(pos[1])
+                print("screen size:", screen_width, screen_height)
                 if 0 <= x < screen_width and 0 <= y < screen_height:
                     self.mouse.position = (x, y)
+                    print("→ Mouse position set to:", (x, y))
 
-                    if not drawing:
-                        print("→ Pressing mouse button")
-                        self.mouse.press(Button.left)
-                        drawing = True
+                    if self.pen_logic and self.pen_logic.get_current_software() == "whiteboard":
+                        if not drawing:
+                            print("→ Pressing mouse button")
+                            self.mouse.press(Button.left)
+                            drawing = True
                 else:
-                    if drawing:
-                        print("→ Releasing mouse button (out of bounds)")
-                        self.mouse.release(Button.left)
-                        drawing = False
+                    if self.pen_logic and self.pen_logic.get_current_software() == "whiteboard":
+                        if drawing:
+                            print("→ Releasing mouse button (out of bounds)")
+                            self.mouse.release(Button.left)
+                            drawing = False
             else:
                 if drawing:
                     print("→ Releasing mouse button (no tracking)")
-                    self.mouse.release(Button.left)
+                    # self.mouse.release(Button.left)
                     drawing = False
 
             time.sleep(0.001)

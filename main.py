@@ -9,7 +9,7 @@ def main():
     # Logique principale
     print("Démarrage de l'application...")
     # Création des instances de GUI et de Control
-    tracker = TrackingManager(color_mode="ORANGE")
+    tracker = TrackingManager(camera_index=1,color_mode="IR", flip_horizontal=True, flip_vertical=True)
     control_app = Control(tracker)
     guiapp = MainGUI(control_app)
     guiapp.run()

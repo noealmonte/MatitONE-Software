@@ -106,7 +106,16 @@ class CalibrationManager:
         idx = 0
 
         corner_names = ["Haut-Gauche", "Haut-Droit", "Bas-Droit", "Bas-Gauche"]
+        # window_name = "Calibration"
+        # # cv2.namedWindow(window_name, cv2.WINDOW_NORMAL) # Create a normal window first
+        # # cv2.setWindowProperty(window_name, cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+        # desired_width = 1280  # Set your desired width
+        # desired_height = 720 # Set your desired height
+        # # --- End of Configuration --- 
 
+        # # --- Create and Resize Window ---
+        # cv2.namedWindow(window_name, cv2.WINDOW_NORMAL) # Create a resizable window
+        # cv2.resizeWindow(window_name, desired_width, desired_height) # Set its size
         while idx < len(self.screen_points):
             frame = self.tracking_manager.camera_manager.get_frame()
             pos = self.tracking_manager.get_position()

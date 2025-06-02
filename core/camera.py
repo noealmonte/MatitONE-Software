@@ -61,7 +61,8 @@ class CameraManager:
 
     def get_frame(self):
         """Retourne la dernière image capturée."""
-        return self.frame
+        with self.lock:
+            return self.frame
 
     def stop_camera(self):
         """Arrête la caméra proprement."""

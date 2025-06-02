@@ -1,8 +1,8 @@
 import threading
 import time
-from pen import Pen # ajouter core.
+from core.pen import Pen # ajouter core.
 import pyautogui  # Assurez-vous d'avoir installé pyautogui
-from softwareDetector import SoftwareDetector  # <- On importe ton détecteur
+from core.softwareDetector import SoftwareDetector  # <- On importe ton détecteur
 
 class PenLogic:
     """Gère la logique du stylo en fonction des événements reçus et du logiciel utilisé."""
@@ -46,12 +46,12 @@ class PenLogic:
         """Traite les messages reçus du stylo BLE."""
         print(f"🖋️ Nouveau message reçu: {message}")
         
-        if message == "S1":
+        if message == "Button1":
             self.handle_switch1()
-        elif message == "S2":
+        elif message == "Button2":
             # self.handle_switch2()
             self.handle_switch2()
-        elif message == "S3":
+        elif message == "Button3":
             self.handle_switch3()
         elif message == "AV2UP": #START_WRITE
             self.handle_sensor_write_front()
@@ -104,6 +104,8 @@ class PenLogic:
         elif self.current_software == "onenote":
             print("📝 Switch 3: Action secondaire pour OneNote")
         else:
+            # Simuler un clic gauche de la souris
+            pyautogui.leftClick()
             print("🔄 Switch 3: Action générique (aucun logiciel spécifique)")
 
     def handle_sensor_write_front(self):
@@ -131,6 +133,10 @@ class PenLogic:
             print("📝 Écriture détectée sur OneNote")
         else:
             print("🔄 Écriture détectée (aucun logiciel spécifique)")
+
+    def get_current_software(self):
+        """Retourne le logiciel actuellement détecté."""
+        return self.current_software if self.current_software else "Aucun logiciel détecté"
 
 
 
