@@ -52,7 +52,9 @@ class Control:
         if self.calibration is None:
             print("No Calibration was found")
             return
-        self.calibration.is_loaded = False
+        if self.calibration.is_loaded:
+            print("Previous Calibration was deleted")
+            self.calibration.is_loaded = False
 
     def _follow_mouse(self):
         screen_width, screen_height = pyautogui.size()
