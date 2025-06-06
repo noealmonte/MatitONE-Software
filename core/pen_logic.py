@@ -15,6 +15,8 @@ class PenLogic:
         self.current_software = None
         self.running = False
         self.mouse_is_down = False 
+        self.erase_mode = False  # Indique si le stylo est en mode effacement
+        self.write_mode = False  # Indique si le stylo est en mode écriture
 
     def start(self):
         """Démarre la connexion au stylo et la détection du logiciel."""
@@ -53,86 +55,146 @@ class PenLogic:
             self.handle_switch2()
         elif message == "Button3":
             self.handle_switch3()
-        elif message == "AV2UP": #START_WRITE
+        elif message in ("AV1UP", "AV2"): #START_WRITE
             self.handle_sensor_write_front()
-        elif message == "AV2DOWN": #STOP_WRITE
-            self.handle_sensor_release_front()
-        # Ajoute ici d'autres cas si besoin
+        # elif message == "AV1DOWN": #STOP_WRITE
+        #     # self.handle_sensor_release_front()
+        elif message in ("AR1UP", "AR2"):  # START_WRITE
+            self.handle_sensor_write_back()
+        elif message == "AR1DOWN":  # STOP_WRITE
+            print("AR1DOWN")
+         # Ajoute ici d'autres cas si besoin
 
     def handle_switch1(self):
         """Action pour Switch 1 en fonction du logiciel détecté."""
         if self.current_software == "whiteboard":
             #simuler clique gauche 
-            pyautogui.mouseDown()
-            pyautogui.mouseUp()
-            print("✏️ Switch 1: Action spéciale pour Whiteboard")
-        elif self.current_software == "onenote":
-            print("📝 Switch 1: Action spéciale pour OneNote")
-            # Simuler Alt + E
+            # Simuler Alt+L (pointeur laser)
             pyautogui.keyDown('alt')
-            pyautogui.press('e')
-            pyautogui.keyUp('alt')  
-            # Simuler G puis G G
-            pyautogui.press('g')
-            pyautogui.press('g')
-            pyautogui.press('g')
+            pyautogui.press('l')
+            pyautogui.keyUp('alt')
+            print("✏️ Switch 1: Action secondaire pour Whiteboard")
+        # elif self.current_software == "onenote":
+        #     print("📝 Switch 1: Action spéciale pour OneNote")
+        #     # Simuler Alt + E
+        #     pyautogui.keyDown('alt')
+        #     pyautogui.press('e')
+        #     pyautogui.keyUp('alt')  
+        #     # Simuler G puis G G
+        #     pyautogui.press('g')
+        #     pyautogui.press('g')
+        #     pyautogui.press('g')
             # Implémente ici une action spécifique
         else:
+            # Simuler un clic droite de la souris
+            pyautogui.rightClick()
             print("🔄 Switch 1: Action générique (aucun logiciel spécifique)")
 
     def handle_switch2(self):
         """Action pour Switch 2 en fonction du logiciel détecté."""
         if self.current_software == "whiteboard":
-            # Simuler Alt+L (pointeur laser)
+            # simuler Alt+I (surligneur jaune)
             pyautogui.keyDown('alt')
-            pyautogui.press('l')
+            pyautogui.press('i')
             pyautogui.keyUp('alt')
             print("✏️ Switch 2: Action secondaire pour Whiteboard")
-        elif self.current_software == "onenote":
-            print("📝 Switch 2: Action secondaire pour OneNote")
+        # elif self.current_software == "onenote":
+        #     print("📝 Switch 2: Action secondaire pour OneNote")
         else:
             print("🔄 Switch 2: Action générique (aucun logiciel spécifique)")
 
     def handle_switch3(self):
         """Action pour Switch 3 en fonction du logiciel détecté."""
         if self.current_software == "whiteboard":
-            # simuler Alt+I (surligneur jaune)
-            pyautogui.keyDown('alt')
-            pyautogui.press('i')
-            pyautogui.keyUp('alt')
-            print("✏️ Switch 3: Action secondaire pour Whiteboard")
-        elif self.current_software == "onenote":
-            print("📝 Switch 3: Action secondaire pour OneNote")
+            pyautogui.leftClick()  # Simule un clic gauche de la souris
+            print("✏️ Switch 3: Action spéciale pour Whiteboard")
+        # elif self.current_software == "onenote":
+        #     print("📝 Switch 3: Action secondaire pour OneNote")
         else:
             # Simuler un clic gauche de la souris
             pyautogui.leftClick()
-            print("🔄 Switch 3: Action générique (aucun logiciel spécifique)")
+            print("🔄 Switch 3: left click si aucune application spécifique")
 
     def handle_sensor_write_front(self):
-        """Action pour le capteur d'écriture."""
+        """Action pour le capteur d'écriture avant."""
         if self.current_software == "whiteboard":
-             if not self.mouse_is_down:
-                pyautogui.mouseDown()# Simule le clic gauche de la souris # CHANGER 
-                self.mouse_is_down = True
-                print("🖱️ Mouse DOWN (début écriture)")
-        elif self.current_software == "onenote":
-            print("📝 Écriture détectée sur OneNote")
-        else:
-            pyautogui.mouseDown()
-            pyautogui.mouseUp()
-            print("🔄 Écriture détectée (aucun logiciel spécifique)")
+            if not self.write_mode:
+                pyautogui.hotkey('alt', 'w', '1')  # Activation du mode écriture
+                self.write_mode = True
+                self.erase_mode = False  # Désactivation du mode gomme
+                print("✍️ Mode écriture activé (Alt+W 1 envoyé)")
+            
+            # if not self.mouse_is_down:
+            #     # pyautogui.mouseDown()  # Simule le clic gauche pour écrire
+            #     self.mouse_is_down = True
+            #     print("🖱️ Mouse DOWN (début écriture)")
 
-    def handle_sensor_release_front(self):
-        """Action pour le capteur de relâchement."""
+    def handle_sensor_write_back(self):
+        """Action pour le capteur d'écriture arrière."""
         if self.current_software == "whiteboard":
-             if self.mouse_is_down:
-                pyautogui.mouseUp()
-                self.mouse_is_down = False
-                print("🖱️ Mouse UP (fin écriture)")
-        elif self.current_software == "onenote":
-            print("📝 Écriture détectée sur OneNote")
-        else:
-            print("🔄 Écriture détectée (aucun logiciel spécifique)")
+            if not self.erase_mode:
+                print("Teest")
+                pyautogui.hotkey('alt', 'x')  # Activation du mode gomme
+                self.erase_mode = True
+                self.write_mode = False  # Désactivation du mode écriture
+                print("🖱️ Mode effacement activé (Alt+X envoyé)")
+
+
+    # def handle_sensor_write_front(self):
+    #     """Action pour le capteur d'écriture."""
+    #     if self.current_software == "whiteboard":
+    #          if not self.write_mode:
+    #             pyautogui.hotkey('alt', 'W', '1')
+    #             self.write_mode = True
+    #          if self.erase_mode:
+    #              pyautogui.hotkey('alt', 'W', '1')
+    #              self.erase_mode = False
+    #          if not self.mouse_is_down:
+    #             # pyautogui.mouseDown()# Simule le clic gauche de la souris # CHANGER 
+    #             self.mouse_is_down = True
+    #             print("🖱️ Mouse DOWN (début écriture)")
+    #     elif self.current_software == "onenote":
+    #         print("📝 Écriture détectée sur OneNote")
+    #     else:
+    #         print("sensor print sans app particulier")
+    #         # pyautogui.mouseDown()
+    #         # pyautogui.mouseUp()
+    #         # print("🔄 Écriture détectée (aucun logiciel spécifique)")
+
+    # def handle_sensor_release_front(self):
+    #     """Action pour le capteur de relâchement."""
+    #     if self.current_software == "whiteboard":
+    #          print("ICI")
+    #          if self.mouse_is_down:
+    #             # pyautogui.mouseUp()
+    #             self.mouse_is_down = False
+    #             print("🖱️ Mouse UP (fin écriture)")
+    #     elif self.current_software == "onenote":
+    #         print("📝 Écriture détectée sur OneNote")
+    #     # else:
+    #     #     print("🔄 Écriture détectée (aucun logiciel spécifique)")
+
+
+    # def handle_sensor_write_back(self):
+    #     """Action pour le capteur d'écriture arrière."""
+    #     if self.current_software == "whiteboard":
+    #         if not self.erase_mode:
+    #             pyautogui.hotkey('alt', 'x')  # Simule l'appui sur Alt+X une seule fois (GOMME)
+    #             self.erase_mode = True
+    #             print("🖱️ Mode effacement activé (Shift maintenu)")
+    #     # elif self.current_software == "onenote":
+    #     #     print("📝 Écriture détectée sur OneNote")
+    #     else:
+    #         print("🔄 Écriture arrière détectée (aucun logiciel spécifique)")
+
+    # def handle_sensor_release_back(self):
+    #     """Action pour le capteur de relâchement arrière."""
+    #     if self.current_software == "whiteboard":
+    #         if self.erase_mode:
+    #             self.erase_mode = False
+    #             pyautogui.keyUp('ALT')  # Relâche la touche Alt
+    #             pyautogui.keyUp('W')  # Relâche la touche Shift
+    #             pyautogui.keyUp('1')
 
     def get_current_software(self):
         """Retourne le logiciel actuellement détecté."""

@@ -42,6 +42,8 @@ class Control:
         if self.calibration.calibrated:
             print("Calibration réussie. Lancement du suivi souris.")
             self.running = True
+            # print("pen logic calibrated:", self.pen_logic.calibrated)
+            # self.pen_logic.set_calibrated(True)
             mouse_thread = threading.Thread(
                 target=self._follow_mouse, daemon=True)
             mouse_thread.start()
@@ -68,10 +70,10 @@ class Control:
             # print("Position du stylo :", pos)
             if pos:
                 x, y = int(pos[0]), int(pos[1])
-                print("screen size:", screen_width, screen_height)
+                # print("screen size:", screen_width, screen_height)
                 if 0 <= x < screen_width and 0 <= y < screen_height:
                     self.mouse.position = (x, y)
-                    print("→ Mouse position set to:", (x, y))
+                    # print("→ Mouse position set to:", (x, y))
 
                     if self.pen_logic and self.pen_logic.get_current_software() == "whiteboard":
                         if not drawing:
@@ -87,7 +89,7 @@ class Control:
             else:
                 if drawing:
                     print("→ Releasing mouse button (no tracking)")
-                    # self.mouse.release(Button.left)
+                    self.mouse.release(Button.left)
                     drawing = False
 
             time.sleep(0.001)
